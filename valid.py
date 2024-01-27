@@ -92,8 +92,9 @@ def main():
 
                 inputs = batch.to(device)
                 ground_truth = ground_truth.to(device)
+                
                 outputs = []
-                _ = backbone(inputs)
+                _ = backbone(inputs)                 ## with the hook funciton in the backbone the feature maps of the backbone are put in the list outputs
                 outputs = embedding_concat(embedding_concat(outputs[0],outputs[1]),outputs[2])
                 recon, std = transformer(outputs)
                 batch_size, channels, width, height = recon.size()
@@ -110,6 +111,7 @@ def main():
                     patch_score = F.avg_pool2d(dist,patch_size,patch_size)
                     patch_score = F.interpolate(patch_score, (width,height), mode='bilinear')
                     patch_normed_score.append(patch_score)
+                    
                 score = torch.zeros(batch_size,1,64,64).to(device)
                 for j in range(4):
                     score = embedding_concat(score, patch_normed_score[j])
@@ -119,13 +121,14 @@ def main():
                         bias=None, stride=1, padding=0, dilation=1)
 
                 score = F.interpolate(score, (ground_truth.size(2),ground_truth.size(3)), mode='bilinear')
+                
                 heatmap = score.repeat(1,3,1,1)
                 score_map.append(score.cpu())
                 gt_mask_list.append(ground_truth.cpu())
                 gt_list.append(gt)
 
                 save_image(inputs, '%s-%s/%s/%s' % (args.exp_name, args.dataset_name, 'validation_images',str(i)+'test1_inputs.png'),nrow= num)
-                save_image(heatmap, '%s-%s/%s/%s' % (args.exp_name, args.dataset_name, 'validation_images',str(i)+'test3_heatmap.png'),range=norm_range[4],normalize=True,nrow= num)
+                save_image(heatmap, '%s-%s/%s/%s' % (args.exp_name, args.dataset_name, 'validation_images',str(i)+'test3_heatmap.png'),normalize=True,nrow= num)#,range=norm_range[4],normalize=True,nrow= num)
                 save_image(ground_truth, '%s-%s/%s/%s' % (args.exp_name, args.dataset_name, 'validation_images',str(i)+'test2_truth.png'),normalize=True,nrow= num)
                 cv2.waitKey(100)
                 heatmap2 = cv2.imread('%s-%s/%s/%s' % (args.exp_name, args.dataset_name, 'validation_images',str(i)+'test3_heatmap.png'),cv2.IMREAD_GRAYSCALE)
