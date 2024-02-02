@@ -105,6 +105,7 @@ class ImageDataset(Dataset):
                 img, ground_truth = transform_test(img, ground_truth)
                 return filename, img, ground_truth, 1
 
+
     def __len__(self):
         return len(self.files)
 

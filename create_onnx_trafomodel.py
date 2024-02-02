@@ -15,7 +15,7 @@ torch.manual_seed(args.seed)
 transformer = Create_nets(args).to(device)
 checkpoint = torch.load('/home/bule/projects/UTRAD/Exp0-r18-cable/saved_models/checkpoint.pth')
 transformer.load_state_dict(checkpoint['transformer'])
-print(transformer)
+#print(transformer)
 
 
 backbone = models.resnet18(pretrained=True).to(device)
@@ -27,7 +27,7 @@ backbone.layer1[-1].register_forward_hook(hook)
 backbone.layer2[-1].register_forward_hook(hook)
 backbone.layer3[-1].register_forward_hook(hook)
 
-_, test_dataloader = Get_dataloader(args)
+train_dataloader, test_dataloader = Get_dataloader(args)
 
 def embedding_concat(x, y):
     B, C1, H1, W1 = x.size()
@@ -44,24 +44,46 @@ def embedding_concat(x, y):
     return z
     
 transformer.eval()
-
-for i,(name ,batch, ground_truth, gt) in enumerate(test_dataloader): 
-    if i == 1:
-        break                      
+for i,(name ,batch) in enumerate(train_dataloader): # test (name ,batch, ground_truth, gt) , train (filename, batch)
+    
+    if i == 2:
+        break  
+    print(name)                    
     with torch.no_grad():
-        
-        num = 4
-        norm_range = [(0.9,1.3),(0.9,1.3),(0.9,1.3),(0.9,1.3),(1.1,1.5),]
-
         inputs = batch.to(device)
-        ground_truth = ground_truth.to(device)
-        
+
         outputs = []
-        _ = backbone(inputs)                 ## with the hook funciton in the backbone the feature maps of the backbone are put in the list outputs
+        _ = backbone(inputs)     
+        print(outputs[0].shape)
+        print(outputs[1].shape)
+        print(outputs[2].shape)
+        ## with the hook funciton in the backbone the feature maps of the backbone are put in the list outputs
         outputs = embedding_concat(embedding_concat(outputs[0],outputs[1]),outputs[2])
         # recon, std = transformer(outputs)
+        torch.save(outputs, f'outputs_train{1}.pth')
+        
+        
+        
+for i,(name ,batch, ground_truth, gt) in enumerate(test_dataloader): # test (name ,batch, ground_truth, gt) , train (filename, batch)
+    if i == 1:
+        break  
+    print(name)
+                    
+    with torch.no_grad():
 
-        torch.onnx.export(transformer, outputs, "transformer_model.onnx", 
-                        export_params=True,
-                        input_names=['input'],
-                        output_names=['output'],)
+        inputs = batch.to(device)
+        outputs = []
+        _ = backbone(inputs)     
+        print(outputs[0].shape)
+        print(outputs[1].shape)
+        print(outputs[2].shape)
+        ## with the hook funciton in the backbone the feature maps of the backbone are put in the list outputs
+        outputs = embedding_concat(embedding_concat(outputs[0],outputs[1]),outputs[2])
+        # recon, std = transformer(outputs)
+        torch.save(outputs, f'outputs_test{1}.pth')
+
+        #### uncommetn to  save onnx model
+        # torch.onnx.export(transformer, outputs, "transformer_model.onnx", 
+        #                 export_params=True,
+        #                 input_names=['input'],
+        #                 output_names=['output'],)

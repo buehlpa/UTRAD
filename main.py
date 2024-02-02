@@ -52,6 +52,7 @@ def main():
 
     backbone.eval()
     outputs = []
+    # hook adds directly to a list calles outputs if a forward pass is done
     def hook(module, input, output):
         outputs.append(output)
     backbone.layer1[-1].register_forward_hook(hook)
