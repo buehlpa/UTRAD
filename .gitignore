@@ -3,6 +3,7 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+*.out
 *.onnx
 *.jpg
 *.png
@@ -65,7 +66,7 @@ cover/
 local_settings.py
 db.sqlite3
 db.sqlite3-journal
-
+1
 # Flask stuff:
 instance/
 .webassets-cache
