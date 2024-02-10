@@ -22,7 +22,7 @@ _pil_interpolation_to_str = {
 #*2
 
 
-
+# TODO loader for , loco , visa , beantec
 class ImageDataset(Dataset):
     def __init__(self, args, root, transforms_=None, mode='train'):
         self.img_size = 280 * args.factor
@@ -48,22 +48,19 @@ class ImageDataset(Dataset):
         #resize to 224
         img = TF.resize(img, self.crop_size, Image.BICUBIC)
         mask = TF.resize(mask, self.crop_size, Image.NEAREST)
-
         #toTensor
         img = TF.to_tensor(img)
         mask = TF.to_tensor(mask)
-
         #normalize
         img = TF.normalize(img, mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225 ])
-
         return img, mask
 
     def _unalign_transform(self, img, mask):
         #resize to 256
         img = TF.resize(img, self.img_size, Image.BICUBIC)
         mask = TF.resize(mask, self.img_size, Image.NEAREST)
-
         #random rotation
+        
         angle = transforms.RandomRotation.get_params([-10, 10])
         img = TF.rotate(img, angle, fill=(0,))
         mask = TF.rotate(mask, angle, fill=(0,))
@@ -79,7 +76,6 @@ class ImageDataset(Dataset):
 
         #normalize
         img = TF.normalize(img, mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225 ])
-        
         return img, mask
 
 
