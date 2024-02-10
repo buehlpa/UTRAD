@@ -26,7 +26,8 @@ class TrainOptions():
         self.parser.add_argument('--image_result_dir', type=str, default='result_images', help=' where to save the result images')
         self.parser.add_argument('--model_result_dir', type=str, default='saved_models', help=' where to save the checkpoints')
         self.parser.add_argument('--validation_image_dir', type=str, default='validation_images', help=' where to save the validation image')
-        
+        self.parser.add_argument('--contamination_rate', type=float, default=0.0, help='How much the training dataset is contaminated with anomalies from the test dataset max 0.1')
+
 
 
     def parse(self):
