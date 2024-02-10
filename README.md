@@ -16,5 +16,5 @@ python valid.py --dataset_name grid
 ```
 4. Validate with unaligned setting:
 ```
-python valid.py --dataset_name grid --unaligned_test
+python valid.py --dataset_name grid --unalign_test
 ```
