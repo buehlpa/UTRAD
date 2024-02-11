@@ -31,7 +31,6 @@ def main():
     np.random.seed(args.seed)
     torch.cuda.manual_seed(args.seed)
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-
     save_dir = '%s-%s/%s/%s' % (args.exp_name, args.dataset_name, args.model_result_dir, 'checkpoint.pth')
     start_epoch = 0
     transformer = Create_nets(args)
@@ -62,7 +61,7 @@ def main():
     layer = 3
 
     criterion = nn.MSELoss()
-
+    # TODO load c
     train_dataloader, test_dataloader = Get_dataloader(args)
 
     def embedding_concat(x, y):

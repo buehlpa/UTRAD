@@ -7,6 +7,7 @@ class TrainOptions():
         self.parser = argparse.ArgumentParser()
         self.initialized = False
 
+# TODO add mode =  for dataset 
     def initialize(self):
         self.parser.add_argument('--exp_name', type=str, default="Exp0-r18", help='the name of the experiment')
         self.parser.add_argument('--epoch_start', type=int, default=0 , help='epoch to start training from')

@@ -63,8 +63,11 @@ def get_paths_mvtec(contamination=0.0,category='bottle',DATA_PATH='/home/bule/pr
     'wood': ['color', 'combined', 'hole', 'liquid', 'scratch'],
     'zipper': ['broken_teeth', 'combined','fabric_border', 'fabric_interior','split_teeth','rough', 'squeezed_teeth']}
     
-    NORMAL_PATH = DATA_PATH + f'/{category}/train/good'
-    ANOMALY_PATH = DATA_PATH + f'/{category}/test'
+    NORMAL_PATH = os.path.join(DATA_PATH, f'{category}/train/good')
+    ANOMALY_PATH = os.path.join(DATA_PATH , f'{category}/test')
+    
+    
+    print(NORMAL_PATH)
     
     normal_images=[os.path.join(NORMAL_PATH,item) for item in os.listdir(NORMAL_PATH)]
     file_path = []
@@ -83,8 +86,8 @@ def get_paths_mvtec(contamination=0.0,category='bottle',DATA_PATH='/home/bule/pr
 
     if verbose:
         print(f'category: {category}, normals train:  {len(normal_images)}, anomalies test: {len(anomaly_images_test)}, normal test: {len(good_images_test)}')       
-        print(f'anomalies test total: {count_files_by_class(anomaly_images_test, anomaly_categories[category])}')
-        print(f'anomalies test sampled: {count_files_by_class(sampled_anomalies_for_train, anomaly_categories[category])}')
+        print(f'anomalies test total:     {count_files_by_class(anomaly_images_test, anomaly_categories[category])}')
+        print(f'anomalies test sampled:   {count_files_by_class(sampled_anomalies_for_train, anomaly_categories[category])}')
         print(f'anomalies test remaining: {count_files_by_class(remaining_anomalies_test, anomaly_categories[category])}')
     
     return normal_images, sampled_anomalies_for_train, good_images_test, remaining_anomalies_test

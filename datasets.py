@@ -236,7 +236,7 @@ def Get_dataloader(args,mode='original_mvtec'):
     if mode == 'contam_mvtec':
         ## get dataset paths for test and train 
         
-        
+        # TODO change dataloader from  dev_ file
         train_paths 
         test_paths
         
