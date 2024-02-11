@@ -22,16 +22,23 @@ from skimage.measure import label
 
 def main():
     args = TrainOptions().parse()
-    with open("./%s-%s/args.log" % (args.exp_name,  args.dataset_name) ,"a") as args_log:
+    
+    # TODO change saving schema
+    EXPERIMENT_PATH = os.path.join(args.results_dir,args.data_set ,f'contamination_{int(args.contamination_rate*100)}',f'{args.exp_name}-{args.data_category}')
+        
+    with open(os.path.join(EXPERIMENT_PATH,'args.log') ,"a") as args_log:
         for k, v in sorted(vars(args).items()):
             print('%s: %s ' % (str(k), str(v)))
             args_log.write('%s: %s \n' % (str(k), str(v)))
 
+    print('step')
     torch.manual_seed(args.seed)
     np.random.seed(args.seed)
     torch.cuda.manual_seed(args.seed)
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    save_dir = '%s-%s/%s/%s' % (args.exp_name, args.dataset_name, args.model_result_dir, 'checkpoint.pth')
+    
+    SAVE_DIR= os.path.join(EXPERIMENT_PATH, args.model_result_dir, 'checkpoint.pth')
+    
     start_epoch = 0
     transformer = Create_nets(args)
     transformer = transformer.to(device)
@@ -41,8 +48,8 @@ def main():
 
     backbone = models.resnet18(pretrained=True).to(device)
 
-    if os.path.exists(save_dir):
-        checkpoint = torch.load(save_dir)
+    if os.path.exists(SAVE_DIR):
+        checkpoint = torch.load(SAVE_DIR)
         transformer.load_state_dict(checkpoint['transformer'])
         start_epoch = checkpoint['start_epoch']
         #optimizer.load_state_dict(checkpoint['optimizer'])
@@ -117,9 +124,6 @@ def main():
                                                             avg_loss / total,
                                                             avg_loss_scale / total)))
 
-        # with open("./%s-%s/args.log" % (args.exp_name,  args.dataset_name) ,"a") as train_log:
-        #     train_log.write("\r[Epoch%d]-[Loss:%f]-[Loss_scale:%f]" %
-        #                                                     (epoch+1, avg_loss / total, avg_loss_scale / total))
 
         if best_loss > avg_loss and best_loss > loss:
             best_loss = avg_loss
@@ -130,7 +134,7 @@ def main():
                         'args':args,
                         'best_loss':best_loss
                 }
-            torch.save(state_dict, save_dir)
+            torch.save(state_dict, SAVE_DIR)
 
         print("start evaluation on test set!")
         transformer.eval()
@@ -193,8 +197,8 @@ def main():
         fpr, tpr, thresholds = roc_curve(gt_mask.flatten(), scores.flatten()) 
         per_pixel_rocauc = roc_auc_score(gt_mask.flatten(), scores.flatten()) 
         print('pixel ROCAUC: %.3f' % (per_pixel_rocauc))
-        
-        with open("./%s-%s/args.log" % (args.exp_name,  args.dataset_name) ,"a") as train_log:
+
+        with open(os.path.join(EXPERIMENT_PATH,'args.log') ,"a") as train_log:
             train_log.write("\r[Epoch%d]-[Loss:%f]-[Loss_scale:%f]-[image_AUC:%f]-[pixel_AUC:%f]" %
                                                         (epoch+1, avg_loss / total, avg_loss_scale / total, img_roc_auc, per_pixel_rocauc))
 

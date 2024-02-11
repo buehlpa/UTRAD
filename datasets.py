@@ -11,6 +11,11 @@ import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
 import torch.nn.functional as F
 import torchvision.transforms.functional as TF
+
+from utils.dataloader import get_paths_mvtec
+
+
+
 _pil_interpolation_to_str = {
     Image.NEAREST: 'PIL.Image.NEAREST',
     Image.BILINEAR: 'PIL.Image.BILINEAR',
@@ -24,7 +29,6 @@ _pil_interpolation_to_str = {
 # TODO loader for , loco , visa , beantec
 
 
-# TODO loader for mvtec with contamination rate ,provide paths to image dataset
 class ImageDataset_mvtec(Dataset):
     def __init__(self, args, root, transforms_=None, mode='train', train_paths=None, test_paths=None):
         
@@ -102,6 +106,10 @@ class ImageDataset_mvtec(Dataset):
                 img, ground_truth = transform_test(img, ground_truth)
                 return filename, img, ground_truth, 1
 
+
+    def __len__(self):
+        return len(self.files)
+    
 ## Original Loader
 class ImageDataset(Dataset):
     def __init__(self, args, root, transforms_=None, mode='train'):
@@ -230,36 +238,47 @@ class JsonDataset(Dataset):
         return len(self.files)
 
 # Configure dataloaders
-def Get_dataloader(args,mode='original_mvtec'):
+def Get_dataloader(args):
 
-
-    if mode == 'contam_mvtec':
+    if args.mode == 'mvtec':
         ## get dataset paths for test and train 
+        normal_images, sampled_anomalies_for_train, good_images_test, remaining_anomalies_test = get_paths_mvtec(contamination=args.contamination_rate,
+                                                                                                                    category=args.data_category,
+                                                                                                                    DATA_PATH=args.data_root,
+                                                                                                                    verbose=True)
         
-        # TODO change dataloader from  dev_ file
-        train_paths 
-        test_paths
+        train_paths = normal_images + sampled_anomalies_for_train
+        test_paths = good_images_test + remaining_anomalies_test
         
         
+        print(f"Train paths: {len(train_paths)} Test paths: {len(test_paths)}")
         
-        train_dataloader = DataLoader(ImageDataset_mvtec(args, "%s/%s" % (args.data_root,args.dataset_name), mode='train', train_paths = train_paths, test_paths = test_paths),
-                        batch_size=args.batch_size, shuffle=True, num_workers=args.n_cpu, drop_last=False)
-
-        test_dataloader = DataLoader(ImageDataset_mvtec(args, "%s/%s" % (args.data_root,args.dataset_name), mode='test', train_paths = train_paths, test_paths = test_paths),
+        DATA_PATH=os.path.join(args.data_root,args.data_category)
+        
+        train_dataloader = DataLoader(ImageDataset_mvtec(args,DATA_PATH,mode='train',train_paths = train_paths,test_paths = test_paths),
+                                                        batch_size=args.batch_size,shuffle=True,num_workers=args.n_cpu,drop_last=False)
+        test_dataloader = DataLoader(ImageDataset_mvtec(args,DATA_PATH,mode='test',train_paths = train_paths,test_paths = test_paths),
+                                                        batch_size=args.batch_size,shuffle=False,num_workers=1,drop_last=False)
+    
+    if args.mode == 'mvtec_loco':
+        pass
+    if args.mode == 'beantec':
+        pass
+    if args.mode == 'visa':
+        pass    
+        
+    if args.mode == 'utrad_mvtec':
+        
+        if args.contamination_rate != 0.0:
+            raise ValueError("Contamination rate should be 0.0 for clean original implementation")
+        DATA_PATH=os.path.join(args.data_root,args.data_category)
+        
+        train_dataloader = DataLoader(ImageDataset(args,DATA_PATH, mode='train'),
+                                                    batch_size=args.batch_size, shuffle=True, num_workers=args.n_cpu, drop_last=False)
+        test_dataloader = DataLoader(ImageDataset(args, DATA_PATH, mode='test'),
                             batch_size=args.batch_size, shuffle=False, num_workers=1, drop_last=False)
 
-
-    if mode == 'original_mvtec':
-        train_dataloader = DataLoader(ImageDataset(args, "%s/%s" % (args.data_root,args.dataset_name), mode='train'),
-                        batch_size=args.batch_size, shuffle=True, num_workers=args.n_cpu, drop_last=False)
-
-        test_dataloader = DataLoader(ImageDataset(args, "%s/%s" % (args.data_root,args.dataset_name), mode='test'),
-                            batch_size=args.batch_size, shuffle=False, num_workers=1, drop_last=False)
-
-    # train_dataloader = DataLoader(JsonDataset(args, "train.jsonl", mode='train'),
-    #                     batch_size=args.batch_size, shuffle=True, num_workers=args.n_cpu, drop_last=False)
-
-    # test_dataloader = DataLoader(JsonDataset(args, "test.jsonl", mode='test'),
-    #                         batch_size=args.batch_size, shuffle=False, num_workers=1, drop_last=False)
 
     return train_dataloader, test_dataloader
+
+

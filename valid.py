@@ -28,7 +28,11 @@ def main():
     args = TrainOptions().parse()
     torch.manual_seed(args.seed)
 
-    save_dir = '%s-%s/%s/%s' % (args.exp_name, args.dataset_name, args.model_result_dir, 'checkpoint.pth')
+    EXPERIMENT_PATH = os.path.join(args.results_dir,args.data_set ,f'contamination_{int(args.contamination_rate*100)}',f'{args.exp_name}-{args.data_category}')
+    SAVE_DIR= os.path.join(EXPERIMENT_PATH, args.model_result_dir, 'checkpoint.pth')
+
+    
+    
     start_epoch = 0
     transformer = Create_nets(args)
     transformer = transformer.to(device)
@@ -43,8 +47,8 @@ def main():
 
     backbone = models.resnet18(pretrained=True).to(device)
 
-    if os.path.exists(save_dir):
-        checkpoint = torch.load(save_dir)
+    if os.path.exists(SAVE_DIR):
+        checkpoint = torch.load(SAVE_DIR)
         transformer.load_state_dict(checkpoint['transformer'])
         start_epoch = checkpoint['start_epoch']
 
@@ -58,7 +62,7 @@ def main():
     #backbone.layer4[-1].register_forward_hook(hook)
     layer = 3
 
-    train_dataloader, test_dataloader = Get_dataloader(args)
+    _, test_dataloader = Get_dataloader(args)
 
 
     def embedding_concat(x, y):
@@ -75,10 +79,12 @@ def main():
 
         return z
 
+    os.makedirs(os.path.join(args.results_dir,args.data_set ,f'contamination_{int(args.contamination_rate*100)}',f'{args.exp_name}-{args.data_category}', args.image_result_dir), exist_ok=True)
 
-    img_save_dir='%s-%s/%s' % (args.exp_name, args.dataset_name, args.validation_image_dir)
-    if not os.path.exists(img_save_dir):
-        os.mkdir(img_save_dir)
+    IMG_SAVE_DIR= os.path.join(EXPERIMENT_PATH,args.validation_image_dir)
+
+    os.mkdir(IMG_SAVE_DIR,exist_ok=True)
+        
     score_map = []
     gt_list = []
     gt_mask_list = []
@@ -126,20 +132,22 @@ def main():
                 score_map.append(score.cpu())
                 gt_mask_list.append(ground_truth.cpu())
                 gt_list.append(gt)
-
-                save_image(inputs, '%s-%s/%s/%s' % (args.exp_name, args.dataset_name, 'validation_images',str(i)+'test1_inputs.png'),nrow= num)
-                save_image(heatmap, '%s-%s/%s/%s' % (args.exp_name, args.dataset_name, 'validation_images',str(i)+'test3_heatmap.png'),normalize=True,nrow= num)#,range=norm_range[4],normalize=True,nrow= num)
-                save_image(ground_truth, '%s-%s/%s/%s' % (args.exp_name, args.dataset_name, 'validation_images',str(i)+'test2_truth.png'),normalize=True,nrow= num)
+                
+                save_image(inputs,os.path.join(IMG_SAVE_DIR, str(i)+'test1_inputs.png'),nrow= num)
+                save_image(heatmap,os.path.join(IMG_SAVE_DIR, str(i)+'test3_heatmap.png') ,normalize=True,nrow= num)#,range=norm_range[4],normalize=True,nrow= num)
+                save_image(ground_truth, os.path.join(IMG_SAVE_DIR, str(i)+'test2_truth.png'),normalize=True,nrow= num)
+                
+                
                 cv2.waitKey(100)
-                heatmap2 = cv2.imread('%s-%s/%s/%s' % (args.exp_name, args.dataset_name, 'validation_images',str(i)+'test3_heatmap.png'),cv2.IMREAD_GRAYSCALE)
+                heatmap2 = cv2.imread(os.path.join(IMG_SAVE_DIR, str(i)+'test3_heatmap.png'),cv2.IMREAD_GRAYSCALE)
                 heatmap2 = cv2.applyColorMap(heatmap2, cv2.COLORMAP_JET)
-                cv2.imwrite('%s-%s/%s/%s' % (args.exp_name, args.dataset_name, 'validation_images',str(i)+'test5_heatmap_color.png'),heatmap2)
+                cv2.imwrite(os.path.join(IMG_SAVE_DIR, str(i)+'test5_heatmap_color.png'),heatmap2)
                 '''
                 num = 4
                 mean = torch.Tensor([0.485, 0.456, 0.406]).unsqueeze(-1).unsqueeze(-1).unsqueeze(0)
                 std = torch.Tensor([0.229, 0.224, 0.225 ]).unsqueeze(-1).unsqueeze(-1).unsqueeze(0)
                 batch = batch * std + mean
-                save_image(batch, '%s-%s/%s/%s' % (args.exp_name, args.dataset_name, 'validation_images',str(i)+'test1_inputs.png'),
+                save_image(batch, '%s-%s/%s/%s' % (args.exp_name, args.data_category, 'validation_images',str(i)+'test1_inputs.png'),
                 range=(0,1),normalize=True,nrow= num)
                 print('batch',i)'''
     #assert 0
@@ -147,7 +155,7 @@ def main():
     score_map = torch.cat(score_map,dim=0)
     gt_mask_list = torch.cat(gt_mask_list,dim=0)
     gt_list = torch.cat(gt_list,dim=0)
-    print('dataset: ', args.dataset_name)
+    print('dataset: ', args.data_category)
     if True:
         if True:
             # Normalization
@@ -185,19 +193,20 @@ def main():
             print('pixel ROCAUC: %.3f' % (per_pixel_rocauc))
             
 
+             
             if args.unalign_test:
-                with open("./%s-%s/validation_result.log" % (args.exp_name,  args.dataset_name) ,"a") as log:
+                with open(os.path.join(EXPERIMENT_PATH,'validation_result.log') ,"a") as log:
                     log.write('epochs:%ss\n' % (str(start_epoch)))
-                    log.write('class_name:%s\n' % (args.dataset_name))
+                    log.write('class_name:%s\n' % (args.data_category))
                     log.write('unalign image ROCAUC: %.3f\n' % (img_roc_auc))
                     log.write('unalign pixel ROCAUC: %.3f\n\n' % (per_pixel_rocauc))
             else:
-                with open("./%s-%s/validation_result.log" % (args.exp_name,  args.dataset_name) ,"w") as log:
+                with open(os.path.join(EXPERIMENT_PATH,'validation_result.log') ,"w") as log:
                     log.write('epochs:%ss\n' % (str(start_epoch)))
-                    log.write('class_name:%s\n' % (args.dataset_name))
+                    log.write('class_name:%s\n' % (args.data_category))
                     log.write('image ROCAUC: %.3f\n' % (img_roc_auc))
                     log.write('pixel ROCAUC: %.3f\n\n' % (per_pixel_rocauc))
-            #fig_pixel_rocauc.plot(fpr, tpr, label='%s ROCAUC: %.3f' % (args.dataset_name, per_pixel_rocauc))
+            #fig_pixel_rocauc.plot(fpr, tpr, label='%s ROCAUC: %.3f' % (args.data_category, per_pixel_rocauc))
 
 if __name__ == '__main__':
     main()
