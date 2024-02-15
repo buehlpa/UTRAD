@@ -41,5 +41,7 @@ class TrainOptions():
         os.makedirs(os.path.join(args.results_dir,args.data_set ,f'contamination_{int(args.contamination_rate*100)}',f'{args.exp_name}-{args.data_category}', args.image_result_dir), exist_ok=True)
         os.makedirs(os.path.join(args.results_dir,args.data_set ,f'contamination_{int(args.contamination_rate*100)}',f'{args.exp_name}-{args.data_category}', args.model_result_dir), exist_ok=True)
 
+        ## TODO add datasetspecific options
+        # set new argument: specific_s dataset_parameters
         self.args = args
         return self.args

@@ -67,6 +67,7 @@ def main():
     layer = 3
 
     criterion = nn.MSELoss()
+    # TODO add validation_loader
     train_dataloader, test_dataloader = Get_dataloader(args)
 
     def embedding_concat(x, y):
@@ -133,7 +134,9 @@ def main():
                         'best_loss':best_loss
                 }
             torch.save(state_dict, SAVE_DIR)
-
+            
+        ## TODO add valdiation with data not from testset , loop 
+        
         print("start evaluation on test set!")
         transformer.eval()
         score_map = []

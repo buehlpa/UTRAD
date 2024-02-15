@@ -3,6 +3,9 @@ import os
 from collections import defaultdict
 import random
 
+
+
+
 def stratified_sample(file_paths, class_list, total_samples,seed=123):
     
     random.seed(seed)
@@ -43,7 +46,7 @@ def count_files_by_class(file_paths, class_list):
     
     return class_counts
 
-
+# mvtec
 def get_paths_mvtec(contamination=0.0,category='bottle',DATA_PATH='/home/bule/projects/datasets/mvtec_anomaly_detection',verbose=True,seed=123):
     
     anomaly_categories = {
