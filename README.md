@@ -12,11 +12,11 @@ where --data_category is used to specify the catogory.
 
 3. Validate with command:
 ```
-python valid.py ----data_category grid
+python valid.py --exp_name Exp_15_02_24 --data_category grid --mode mvtec
 ```
 4. Validate with unaligned setting:
 ```
-python valid.py ----data_category grid --unalign_test
+python valid.py --exp_name Exp_15_02_24  --data_category grid  --mode mvtec --unalign_test
 ```
 
 

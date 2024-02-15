@@ -36,8 +36,8 @@ class ImageDataset_mvtec(Dataset):
         self.crop_size = 256 * args.factor
         self.args = args
         self.mode = mode
-        if train_paths is None or test_paths is None:
-            raise ValueError("train_paths and test_paths must be provided")
+        if train_paths is None and test_paths is None:
+            raise ValueError("either test or train paths must be provided depending on the mode")
         
         self.train_paths = train_paths
         self.test_paths = test_paths
@@ -242,22 +242,34 @@ def Get_dataloader(args):
 
     if args.mode == 'mvtec':
         ## get dataset paths for test and train 
-        normal_images, sampled_anomalies_for_train, good_images_test, remaining_anomalies_test = get_paths_mvtec(contamination=args.contamination_rate,
-                                                                                                                    category=args.data_category,
-                                                                                                                    DATA_PATH=args.data_root,
-                                                                                                                    verbose=True)
+        EXPERIMENT_LOG_PATH = os.path.join(args.results_dir,args.data_set ,
+                                    f'contamination_{int(args.contamination_rate*100)}',
+                                    f'{args.exp_name}-{args.data_category}',
+                                    "experiment_paths.json")
         
-        train_paths = normal_images + sampled_anomalies_for_train
-        test_paths = good_images_test + remaining_anomalies_test
+        # Load if already exists
+        if os.path.exists(EXPERIMENT_LOG_PATH):
+            with open(EXPERIMENT_LOG_PATH, "r") as file:
+                experiment_paths = json.load(file)
+        else:        
+            normal_images, sampled_anomalies_for_train, good_images_test, remaining_anomalies_test = get_paths_mvtec(contamination=args.contamination_rate,
+                                                                                                                        category=args.data_category,
+                                                                                                                        DATA_PATH=args.data_root,
+                                                                                                                        verbose=True)
+            train_paths = normal_images + sampled_anomalies_for_train
+            test_paths = good_images_test + remaining_anomalies_test
+            experiment_paths={'train':train_paths,'test':test_paths,'contamination_rate':args.contamination_rate,'seed':args.seed}
+            print(f"Train paths: {len(train_paths)} Test paths: {len(test_paths)}")
+
+            with open(os.path.join(EXPERIMENT_LOG_PATH), "w") as file:
+                json.dump(experiment_paths, file)
         
-        
-        print(f"Train paths: {len(train_paths)} Test paths: {len(test_paths)}")
         
         DATA_PATH=os.path.join(args.data_root,args.data_category)
-        
-        train_dataloader = DataLoader(ImageDataset_mvtec(args,DATA_PATH,mode='train',train_paths = train_paths,test_paths = test_paths),
+        train_dataloader = DataLoader(ImageDataset_mvtec(args,DATA_PATH,mode='train',train_paths = experiment_paths['train'],test_paths = None),
                                                         batch_size=args.batch_size,shuffle=True,num_workers=args.n_cpu,drop_last=False)
-        test_dataloader = DataLoader(ImageDataset_mvtec(args,DATA_PATH,mode='test',train_paths = train_paths,test_paths = test_paths),
+        
+        test_dataloader = DataLoader(ImageDataset_mvtec(args,DATA_PATH,mode='test',train_paths = None,test_paths = experiment_paths['test']),
                                                         batch_size=args.batch_size,shuffle=False,num_workers=1,drop_last=False)
     
     if args.mode == 'mvtec_loco':
@@ -265,8 +277,7 @@ def Get_dataloader(args):
     if args.mode == 'beantec':
         pass
     if args.mode == 'visa':
-        pass    
-        
+        pass        
     if args.mode == 'utrad_mvtec':
         
         if args.contamination_rate != 0.0:

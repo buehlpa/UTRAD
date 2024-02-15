@@ -23,7 +23,6 @@ from skimage.measure import label
 def main():
     args = TrainOptions().parse()
     
-    # TODO change saving schema
     EXPERIMENT_PATH = os.path.join(args.results_dir,args.data_set ,f'contamination_{int(args.contamination_rate*100)}',f'{args.exp_name}-{args.data_category}')
         
     with open(os.path.join(EXPERIMENT_PATH,'args.log') ,"a") as args_log:
@@ -68,7 +67,6 @@ def main():
     layer = 3
 
     criterion = nn.MSELoss()
-    # TODO load c
     train_dataloader, test_dataloader = Get_dataloader(args)
 
     def embedding_concat(x, y):

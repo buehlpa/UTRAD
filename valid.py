@@ -83,7 +83,7 @@ def main():
 
     IMG_SAVE_DIR= os.path.join(EXPERIMENT_PATH,args.validation_image_dir)
 
-    os.mkdir(IMG_SAVE_DIR,exist_ok=True)
+    os.makedirs(IMG_SAVE_DIR,exist_ok=True)
         
     score_map = []
     gt_list = []
