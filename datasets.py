@@ -237,7 +237,7 @@ class JsonDataset(Dataset):
     def __len__(self):
         return len(self.files)
 
-# Configure dataloaders
+# Configure dataloaders # TODO add code from dev
 def Get_dataloader(args):
 
     if args.mode == 'mvtec':

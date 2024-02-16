@@ -67,7 +67,9 @@ def main():
     layer = 3
 
     criterion = nn.MSELoss()
-    # TODO add validation_loader
+    # TODO add validation_loader # marry dev code with this code
+    
+    
     train_dataloader, test_dataloader = Get_dataloader(args)
 
     def embedding_concat(x, y):
