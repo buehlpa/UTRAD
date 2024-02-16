@@ -1,6 +1,7 @@
 import argparse
 import os
 import torch
+import json 
 
 class TrainOptions():
     def __init__(self):
@@ -8,14 +9,14 @@ class TrainOptions():
         self.initialized = False
 
     def initialize(self):
-        self.parser.add_argument('--exp_name', type=str, default="Exp1", help='the name of the experiment')
-        self.parser.add_argument('--epoch_start', type=int, default=0 , help='epoch to start training from')
-        self.parser.add_argument('--epoch_num', type=int, default=150, help='number of epochs of training')
-        self.parser.add_argument('--factor', type=int, default= 1, help='not implemented yet')
-        self.parser.add_argument('--seed', type=int, default=233, help='random seed')
-        self.parser.add_argument('--num_row', type=int, default=4, help='number of image in a rows for display')
-        self.parser.add_argument('--activation', type=str, default='gelu', help='activation type for transformer')
-        self.parser.add_argument('--unalign_test', action='store_true', default=False, help='whether to valid with unaligned data: \ in this mode, test images are random ratate +-10degree, and randomcrop from 256x256 to 224x224')
+        self.parser.add_argument('--exp_name',       type=str, default="Exp1", help='the name of the experiment')
+        self.parser.add_argument('--epoch_start',    type=int, default=0 , help='epoch to start training from')
+        self.parser.add_argument('--epoch_num',      type=int, default=150, help='number of epochs of training')
+        self.parser.add_argument('--factor',         type=int, default= 1, help='not implemented yet')
+        self.parser.add_argument('--seed',           type=int, default=233, help='random seed')
+        self.parser.add_argument('--num_row',        type=int, default=4, help='number of image in a rows for display')
+        self.parser.add_argument('--activation',     type=str, default='gelu', help='activation type for transformer')
+        self.parser.add_argument('--unalign_test',  action='store_true', default=False, help='whether to valid with unaligned data: \ in this mode, test images are random ratate +-10degree, and randomcrop from 256x256 to 224x224')
         self.parser.add_argument('--data_root', type=str, default='/home/bule/projects/datasets/mvtec_anomaly_detection/', help='dir of the dataset')
         self.parser.add_argument('--data_category', type=str, default="cable", help='category name of the dataset')
         self.parser.add_argument('--data_set', type=str, default="mvtec", help='dataset , mvtec , mvtec_loco, beantec,')
@@ -41,7 +42,13 @@ class TrainOptions():
         os.makedirs(os.path.join(args.results_dir,args.data_set ,f'contamination_{int(args.contamination_rate*100)}',f'{args.exp_name}-{args.data_category}', args.image_result_dir), exist_ok=True)
         os.makedirs(os.path.join(args.results_dir,args.data_set ,f'contamination_{int(args.contamination_rate*100)}',f'{args.exp_name}-{args.data_category}', args.model_result_dir), exist_ok=True)
 
-        ## TODO add datasetspecific options
-        # set new argument: specific_s dataset_parameters
+        try:
+            with open(os.path.join('configurations',f'{args.data_set}.json' ), 'r') as file:
+                dataset_parameters = json.load(file)
+            setattr(args, 'dataset_parameters', dataset_parameters)
+        except FileNotFoundError:
+            print(f"Configuration file for {args.data_set} not found. Proceeding with default parameters.")
+            setattr(args, 'dataset_parameters', {})
+        
         self.args = args
         return self.args
