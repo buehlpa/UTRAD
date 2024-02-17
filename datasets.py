@@ -12,7 +12,7 @@ from torch.utils.data import DataLoader
 import torch.nn.functional as F
 import torchvision.transforms.functional as TF
 
-from utils.dataloader import get_paths_mvtec
+from utils.dataloader import get_paths_mvtec , get_paths_mvtec_loco
 
 
 
@@ -26,7 +26,7 @@ _pil_interpolation_to_str = {
 }
 #*2
 
-# TODO loader for , loco , visa , beantec
+# TODO loader for, visa , beantec
 
 
 class ImageDataset_mvtec(Dataset):
@@ -49,6 +49,9 @@ class ImageDataset_mvtec(Dataset):
                                                 transforms.ToTensor(),
                                                 transforms.Normalize(mean=[0.485, 0.456, 0.406],
                                                     std=[0.229, 0.224, 0.225 ]) ])
+        
+        self.resize_transform_loco = transforms.Resize((self.crop_size, self.crop_size), Image.BICUBIC)
+
         if mode == 'train':
             self.files = train_paths
         elif mode == 'test':
@@ -89,21 +92,35 @@ class ImageDataset_mvtec(Dataset):
         img = Image.open(filename)
         img = img.convert('RGB')
         
+
+        if self.args.mode=='mvtec_loco':
+            img = self.resize_transform_loco(img)       
+
+        
         if self.mode == 'train':
-            img = self.transform_train(img)
+            img = self.transform_train(img)            
             return filename, img
         
         elif self.mode == 'test':
             transform_test = self._unalign_transform if self.args.unalign_test else self._align_transform
             img_size = (img.size[0], img.size[1])
             
-            if 'good' in filename:
-                ground_truth = Image.new('L',(img_size[0],img_size[1]),0)
+            
+            if 'good' in filename:    
+                ground_truth =Image.new('L',(img_size[0],img_size[1]),0)
                 img, ground_truth = transform_test(img, ground_truth)
+                
                 return filename, img, ground_truth, 0
-            else:
-                ground_truth = Image.open(filename.replace("test", "ground_truth").replace(".png", "_mask.png"))
+            else:   
+                # different ground truth schema for mvtec_loco
+                if self.args.mode=='mvtec_loco':
+                    ground_truth = Image.open(filename.replace("test", "ground_truth").replace(".png", "/000.png"))                        
+                if self.args.mode=='mvtec':
+                    ground_truth = Image.open(filename.replace("test", "ground_truth").replace(".png", "_mask.png"))
+                
+                ground_truth = self.resize_transform_loco(ground_truth)  
                 img, ground_truth = transform_test(img, ground_truth)
+                
                 return filename, img, ground_truth, 1
 
 
@@ -240,40 +257,51 @@ class JsonDataset(Dataset):
 # Configure dataloaders # TODO add code from dev
 def Get_dataloader(args):
 
-    if args.mode == 'mvtec':
+    if args.mode == 'mvtec' or args.mode == 'mvtec_loco':
         ## get dataset paths for test and train 
         EXPERIMENT_LOG_PATH = os.path.join(args.results_dir,args.data_set ,
                                     f'contamination_{int(args.contamination_rate*100)}',
-                                    f'{args.exp_name}-{args.data_category}',
-                                    "experiment_paths.json")
+                                    f'{args.exp_name}-{args.data_category}'
+                                    )
         
         # Load if already exists
-        if os.path.exists(EXPERIMENT_LOG_PATH):
-            with open(EXPERIMENT_LOG_PATH, "r") as file:
+        if os.path.exists(os.path.join(EXPERIMENT_LOG_PATH,"experiment_paths.json")):
+            with open(os.path.join(EXPERIMENT_LOG_PATH,"experiment_paths.json"), "r") as file:
                 experiment_paths = json.load(file)
-        else:        
-            normal_images, sampled_anomalies_for_train, good_images_test, remaining_anomalies_test = get_paths_mvtec(contamination=args.contamination_rate,
-                                                                                                                        category=args.data_category,
-                                                                                                                        DATA_PATH=args.data_root,
-                                                                                                                        verbose=True)
-            train_paths = normal_images + sampled_anomalies_for_train
-            test_paths = good_images_test + remaining_anomalies_test
-            experiment_paths={'train':train_paths,'test':test_paths,'contamination_rate':args.contamination_rate,'seed':args.seed}
-            print(f"Train paths: {len(train_paths)} Test paths: {len(test_paths)}")
+        else:    
+            if args.mode == 'mvtec':    
+                normal_images, validation_images, sampled_anomalies_for_train, sampled_anomalies_for_val, good_images_test, remaining_anomalies_test = get_paths_mvtec(args,verbose=True)
 
-            with open(os.path.join(EXPERIMENT_LOG_PATH), "w") as file:
+            
+            if args.mode == 'mvtec_loco':
+                normal_images, validation_images, sampled_anomalies_for_train, sampled_anomalies_for_val, good_images_test, remaining_anomalies_test = get_paths_mvtec_loco(args,verbose=True)
+                
+            train_paths = normal_images + sampled_anomalies_for_train
+            valid_paths = validation_images + sampled_anomalies_for_val
+            test_paths = good_images_test + remaining_anomalies_test
+            
+            
+            experiment_paths={'train':train_paths,'test':test_paths,'valid':valid_paths,'contamination_rate':args.contamination_rate,'seed':args.seed}
+
+            os.makedirs(EXPERIMENT_LOG_PATH, exist_ok=True)
+            with open(os.path.join(EXPERIMENT_LOG_PATH,"experiment_paths.json"), "w") as file:
                 json.dump(experiment_paths, file)
         
         
         DATA_PATH=os.path.join(args.data_root,args.data_category)
         train_dataloader = DataLoader(ImageDataset_mvtec(args,DATA_PATH,mode='train',train_paths = experiment_paths['train'],test_paths = None),
                                                         batch_size=args.batch_size,shuffle=True,num_workers=args.n_cpu,drop_last=False)
+        if len(experiment_paths['valid']) > 0:
+            valid_dataloader = DataLoader(ImageDataset_mvtec(args,DATA_PATH,mode='test',train_paths = None,test_paths = experiment_paths['valid']),
+                                                batch_size=args.batch_size,shuffle=False,num_workers=1,drop_last=False)
+        else:
+            valid_dataloader = None
         
+
         test_dataloader = DataLoader(ImageDataset_mvtec(args,DATA_PATH,mode='test',train_paths = None,test_paths = experiment_paths['test']),
                                                         batch_size=args.batch_size,shuffle=False,num_workers=1,drop_last=False)
     
-    if args.mode == 'mvtec_loco':
-        pass
+
     if args.mode == 'beantec':
         pass
     if args.mode == 'visa':
@@ -290,6 +318,6 @@ def Get_dataloader(args):
                             batch_size=args.batch_size, shuffle=False, num_workers=1, drop_last=False)
 
 
-    return train_dataloader, test_dataloader
+    return train_dataloader,valid_dataloader, test_dataloader
 
 

@@ -2,6 +2,8 @@
 import os
 from collections import defaultdict
 import random
+from sklearn.model_selection import train_test_split
+import warnings
 
 
 
@@ -47,34 +49,22 @@ def count_files_by_class(file_paths, class_list):
     return class_counts
 
 # mvtec
-def get_paths_mvtec(contamination=0.0,category='bottle',DATA_PATH='/home/bule/projects/datasets/mvtec_anomaly_detection',verbose=True,seed=123):
+def get_paths_mvtec(args,verbose=True,):
     
-    anomaly_categories = {
-    'bottle': ['broken_large', 'broken_small', 'contamination'],
-    'cable': ['bent_wire', 'cable_swap', 'combined', 'cut_inner_insulation', 'cut_outer_insulation', 'missing_cable', 'missing_wire', 'poke_insulation'],
-    'capsule': ['crack', 'faulty_imprint', 'poke', 'scratch','squeeze'],
-    'carpet': ['color', 'cut', 'hole', 'metal_contamination', 'thread'],
-    'grid': ['bent', 'broken', 'glue', 'metal_contamination', 'thread'],
-    'hazelnut': ['crack', 'cut', 'hole', 'print'],
-    'leather': ['color', 'cut', 'fold', 'glue', 'poke'],
-    'metal_nut': ['bent', 'color', 'flip', 'scratch'],
-    'pill': ['color', 'combined','contamination', 'crack', 'faulty_imprint', 'pill_type','scratch'],
-    'screw': ['manipulated_front', 'scratch_head', 'scratch_neck','thread_side', 'thread_top'],
-    'tile': ['crack', 'glue_strip', 'gray_stroke', 'oil','rough'],
-    'toothbrush': ['defective'],
-    'transistor': ['bent_lead', 'cut_lead', 'damaged_case', 'misplaced'],
-    'wood': ['color', 'combined', 'hole', 'liquid', 'scratch'],
-    'zipper': ['broken_teeth', 'combined','fabric_border', 'fabric_interior','split_teeth','rough', 'squeezed_teeth']}
+    anomaly_categories=args.dataset_parameters['anomaly_categories']
+    category=args.data_category
+    validation=args.dataset_parameters['use_validation']
+    validation_split=args.dataset_parameters['validation_split']
+    DATA_PATH=args.data_root
+    
     
     NORMAL_PATH = os.path.join(DATA_PATH, f'{category}/train/good')
     ANOMALY_PATH = os.path.join(DATA_PATH , f'{category}/test')
     
-    
-    print(NORMAL_PATH)
-    
+        
     normal_images=[os.path.join(NORMAL_PATH,item) for item in os.listdir(NORMAL_PATH)]
     file_path = []
-    for root, dirs, files in os.walk(ANOMALY_PATH):
+    for root, _, files in os.walk(ANOMALY_PATH):
         for file in files:
             file_path.append( os.path.join(root, file))
         
@@ -83,9 +73,19 @@ def get_paths_mvtec(contamination=0.0,category='bottle',DATA_PATH='/home/bule/pr
     
 
     
-    n_samples = int(len(normal_images)*contamination)
+    n_samples = int(len(normal_images)*args.contamination_rate)
     
-    sampled_anomalies_for_train, remaining_anomalies_test = stratified_sample(anomaly_images_test, anomaly_categories[category], n_samples, seed)
+    sampled_anomalies_for_train, remaining_anomalies_test = stratified_sample(anomaly_images_test, anomaly_categories[category], n_samples, args.seed)
+
+    if validation_split > 0:
+        if validation!= True:
+            raise ValueError('validation_split is set to > 0 but use_validation is set to False')
+        normal_images,validation_images = train_test_split(normal_images, test_size=validation_split, random_state=args.seed)
+        sampled_anomalies_for_train, sampled_anomalies_for_val = train_test_split(sampled_anomalies_for_train, test_size=validation_split, random_state=args.seed)
+    else:
+        sampled_anomalies_for_val = []
+        validation_images = []
+
 
     if verbose:
         print(f'category: {category}, normals train:  {len(normal_images)}, anomalies test: {len(anomaly_images_test)}, normal test: {len(good_images_test)}')       
@@ -93,4 +93,51 @@ def get_paths_mvtec(contamination=0.0,category='bottle',DATA_PATH='/home/bule/pr
         print(f'anomalies test sampled:   {count_files_by_class(sampled_anomalies_for_train, anomaly_categories[category])}')
         print(f'anomalies test remaining: {count_files_by_class(remaining_anomalies_test, anomaly_categories[category])}')
     
-    return normal_images, sampled_anomalies_for_train, good_images_test, remaining_anomalies_test
+    return normal_images, validation_images, sampled_anomalies_for_train, sampled_anomalies_for_val, good_images_test, remaining_anomalies_test
+
+
+def get_paths_mvtec_loco(args,verbose=True):
+    
+
+    anomaly_categories=args.dataset_parameters['anomaly_categories']
+    category=args.data_category
+    validation=args.dataset_parameters['use_validation']
+    validation_split=args.dataset_parameters['validation_split']
+    DATA_PATH=args.data_root
+    
+    NORMAL_PATH = os.path.join(DATA_PATH, f'{category}/train/good')
+    VALIDATION_PATH = os.path.join(DATA_PATH, f'{category}/validation/good')
+    ANOMALY_PATH = os.path.join(DATA_PATH , f'{category}/test')
+    
+    file_path = []
+    for root, dirs, files in os.walk(ANOMALY_PATH):
+        for file in files:
+            file_path.append( os.path.join(root, file))
+        
+    anomaly_images_test=[item for item in file_path if "good" not in item]
+    good_images_test=[item for item in file_path if "good" in item]
+    
+    normal_images=[os.path.join(NORMAL_PATH,item) for item in os.listdir(NORMAL_PATH)]
+    validation_images=[os.path.join(VALIDATION_PATH,item) for item in os.listdir(VALIDATION_PATH)]
+
+    
+    n_samples = int((len(normal_images)+len(validation_images))*args.contamination_rate)
+    valid_train_ratio=float(len(validation_images)/(len(normal_images)+len(validation_images)))
+    
+    
+    
+    sampled_anomalies_for_train, remaining_anomalies_test = stratified_sample(anomaly_images_test,anomaly_categories[category], n_samples, args.seed)
+
+    if validation:
+        warnings.warn(f"Vaidation split is set to {validation_split}, but the dataset is already split into train and validation sets by publisher. Ignoring validation split ratio.")
+        sampled_anomalies_for_train, sampled_anomalies_for_val = train_test_split(sampled_anomalies_for_train, test_size=valid_train_ratio, random_state=args.seed)
+    else:
+        sampled_anomalies_for_val = []
+
+    if verbose:
+        print(f'category: {category}, normals train:  {len(normal_images)}, anomalies test: {len(anomaly_images_test)}, normal test: {len(good_images_test)}')       
+        print(f'anomalies test total:     {count_files_by_class(anomaly_images_test, anomaly_categories[category])}')
+        print(f'anomalies test sampled:   {count_files_by_class(sampled_anomalies_for_train, anomaly_categories[category])}')
+        print(f'anomalies test remaining: {count_files_by_class(remaining_anomalies_test, anomaly_categories[category])}')
+        
+    return normal_images, validation_images, sampled_anomalies_for_train, sampled_anomalies_for_val, good_images_test, remaining_anomalies_test

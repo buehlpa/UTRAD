@@ -19,7 +19,7 @@ class TrainOptions():
         self.parser.add_argument('--unalign_test',  action='store_true', default=False, help='whether to valid with unaligned data: \ in this mode, test images are random ratate +-10degree, and randomcrop from 256x256 to 224x224')
         self.parser.add_argument('--data_root', type=str, default='/home/bule/projects/datasets/mvtec_anomaly_detection/', help='dir of the dataset')
         self.parser.add_argument('--data_category', type=str, default="cable", help='category name of the dataset')
-        self.parser.add_argument('--data_set', type=str, default="mvtec", help='dataset , mvtec , mvtec_loco, beantec,')
+        self.parser.add_argument('--data_set', type=str, default="mvtec", help='dataset , mvtec , mvtec_loco, beantec')
         self.parser.add_argument('--batch_size', type=int, default=2, help='size of the batches')
         self.parser.add_argument('--lr', type=float, default=1e-4, help='adam: learning rate')
         self.parser.add_argument('--b1', type=float, default=0.5, help='adam: decay of first order momentum of gradient')
@@ -32,6 +32,9 @@ class TrainOptions():
         self.parser.add_argument('--contamination_rate', type=float, default=0.0, help='How much the training dataset is contaminated with anomalies from the test dataset max 0.1')
         self.parser.add_argument('--mode', type=str, default='utrad_mvtec', help='Which dataloader should be used: one of utrad_mvtec,mvtec, mvtec_loco, beantec,visa')
 
+
+## TODO mode dataset  are equvivalent, remove trhough whole dataset
+## TODO add config file for each dataset..
 
     def parse(self):
         if not self.initialized:

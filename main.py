@@ -67,10 +67,10 @@ def main():
     layer = 3
 
     criterion = nn.MSELoss()
-    # TODO add validation_loader # marry dev code with this code
     
     
-    train_dataloader, test_dataloader = Get_dataloader(args)
+    
+    train_dataloader, valid_loader ,test_dataloader = Get_dataloader(args)
 
     def embedding_concat(x, y):
         B, C1, H1, W1 = x.size()
@@ -137,7 +137,9 @@ def main():
                 }
             torch.save(state_dict, SAVE_DIR)
             
-        ## TODO add valdiation with data not from testset , loop 
+        ## TODO add validation with data not from testset , loop 
+        
+        
         
         print("start evaluation on test set!")
         transformer.eval()
@@ -152,6 +154,9 @@ def main():
                 _ = backbone(inputs)
                 outputs = embedding_concat(embedding_concat(outputs[0],outputs[1]),outputs[2])
                 recon, std = transformer(outputs)
+                
+                
+                
                 batch_size, channels, width, height = recon.size()
                 dist = torch.norm(recon - outputs, p = 2, dim = 1, keepdim = True).div(std.abs())
                 dist = dist.view(batch_size, 1, width, height)
@@ -171,14 +176,14 @@ def main():
                 score = F.conv2d(input=score, 
                         weight=torch.tensor([[[[0.0]],[[0.25]],[[0.25]],[[0.25]],[[0.25]]]]).to(device), 
                         bias=None, stride=1, padding=0, dilation=1)
-
                 score = F.interpolate(score, (ground_truth.size(2),ground_truth.size(3)), mode='bilinear', align_corners=False)
                 heatmap = score.repeat(1,3,1,1)
                 score_map.append(score.cpu())
                 gt_mask_list.append(ground_truth.cpu())
                 gt_list.append(gt)
-
+        
         score_map = torch.cat(score_map,dim=0)
+        
         gt_mask_list = torch.cat(gt_mask_list,dim=0)
         gt_list = torch.cat(gt_list,dim=0)
 

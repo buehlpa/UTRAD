@@ -22,19 +22,9 @@ python valid.py --exp_name Exp_15_02_24  --data_category grid  --mode mvtec --un
 
 
 # experiments:
-Exp0-r18
-- original configuration utrad
-
-Exp1
-reproduce results with contam schema  with contam = 0.0  , new datalaoder
 
 
-python main.py --data_category grid --mode mvtec
-
-ExP2 contaminatoion
-reproduce results with contam schema  with contam > 0.0  , new datalaoder
-
-python main.py --exp_name Exp2 --data_category grid --mode mvtec --contamination_rate 0.1
+python main.py --exp_name ExpNAME --data_category grid --mode mvtec --contamination_rate 0.1
 
 
 
@@ -42,3 +32,6 @@ python main.py --exp_name Exp2 --data_category grid --mode mvtec --contamination
 
 bash [path] /run_multiple.sh
 
+# For differnet dataset
+# mvtec loco
+python main.py --exp_name Exp_17_02_24_baseline --data_category breakfast_box --mode mvtec_loco --data_set mvtec_loco --contamination_rate 0.0 --data_root /home/bule/projects/datasets/mvtec_loco_anomaly_detection
