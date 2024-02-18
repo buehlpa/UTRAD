@@ -1,0 +1,26 @@
+PUSHPINS, after epoch 4
+
+Traceback (most recent call last):
+  File "/home/bule/projects/UTRAD/main.py", line 214, in <module>
+    main()
+  File "/home/bule/projects/UTRAD/main.py", line 198, in main
+    fpr, tpr, _ = roc_curve(gt_list, img_scores)
+  File "/home/bule/anaconda3/envs/ultrad/lib/python3.9/site-packages/sklearn/utils/_param_validation.py", line 213, in wrapper
+    return func(*args, **kwargs)
+  File "/home/bule/anaconda3/envs/ultrad/lib/python3.9/site-packages/sklearn/metrics/_ranking.py", line 1095, in roc_curve
+    fps, tps, thresholds = _binary_clf_curve(
+  File "/home/bule/anaconda3/envs/ultrad/lib/python3.9/site-packages/sklearn/metrics/_ranking.py", line 810, in _binary_clf_curve
+    assert_all_finite(y_score)
+  File "/home/bule/anaconda3/envs/ultrad/lib/python3.9/site-packages/sklearn/utils/validation.py", line 204, in assert_all_finite
+    _assert_all_finite(
+  File "/home/bule/anaconda3/envs/ultrad/lib/python3.9/site-packages/sklearn/utils/validation.py", line 126, in _assert_all_finite
+    _assert_all_finite_element_wise(
+  File "/home/bule/anaconda3/envs/ultrad/lib/python3.9/site-packages/sklearn/utils/validation.py", line 175, in _assert_all_finite_element_wise
+    raise ValueError(msg_err)
+ValueError: Input contains NaN.
+/home/bule/anaconda3/envs/ultrad/lib/python3.9/site-packages/torch/nn/modules/transformer.py:282: UserWarning: enable_nested_tensor is True, but self.use_nested_tensor is False because encoder_layer.self_attn.batch_first was not True(use batch_first for better inference performance)
+  warnings.warn(f"enable_nested_tensor is True, but self.use_nested_tensor is False because {why_not_sparsity_fast_path}")
+/home/bule/anaconda3/envs/ultrad/lib/python3.9/site-packages/torchvision/models/_utils.py:208: UserWarning: The parameter 'pretrained' is deprecated since 0.13 and may be removed in the future, please use 'weights' instead.
+  warnings.warn(
+/home/bule/anaconda3/envs/ultrad/lib/python3.9/site-packages/torchvision/models/_utils.py:223: UserWarning: Arguments other than a weight enum or `None` for 'weights' are deprecated since 0.13 and may be removed in the future. The current behavior is equivalent to passing `weights=ResNet18_Weights.IMAGENET1K_V1`. You can also use `weights=ResNet18_Weights.DEFAULT` to get the most up-to-date weights.
+  warnings.warn(msg)

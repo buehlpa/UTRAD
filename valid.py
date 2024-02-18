@@ -62,7 +62,7 @@ def main():
     #backbone.layer4[-1].register_forward_hook(hook)
     layer = 3
 
-    _, test_dataloader = Get_dataloader(args)
+    _, _, test_dataloader = Get_dataloader(args)
 
 
     def embedding_concat(x, y):

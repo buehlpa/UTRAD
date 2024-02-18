@@ -42,7 +42,7 @@ def count_files_by_class(file_paths, class_list):
     # Count occurrences of each class in file paths
     for path in file_paths:
         for class_name in class_list:
-            if class_name in path:
+            if class_name in os.path.split(path)[0].split(os.sep):
                 class_counts[class_name] += 1
                 break  # Stop checking other classes if the current one matches
     

@@ -31,6 +31,7 @@ class TrainOptions():
         self.parser.add_argument('--validation_image_dir', type=str, default='validation_images', help=' where to save the validation image')
         self.parser.add_argument('--contamination_rate', type=float, default=0.0, help='How much the training dataset is contaminated with anomalies from the test dataset max 0.1')
         self.parser.add_argument('--mode', type=str, default='utrad_mvtec', help='Which dataloader should be used: one of utrad_mvtec,mvtec, mvtec_loco, beantec,visa')
+        self.parser.add_argument('--development', type=bool, default=False, help='used for development mode , some paths are not saved ')
 
 
 ## TODO mode dataset  are equvivalent, remove trhough whole dataset
