@@ -9,7 +9,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from models import Create_nets
-from datasets import Get_dataloader
+from datasets import get_dataloader
 from configurations.options import TrainOptions
 from torchvision.utils import save_image
 from torchvision import models
@@ -62,7 +62,7 @@ def main():
     #backbone.layer4[-1].register_forward_hook(hook)
     layer = 3
 
-    _, _, test_dataloader = Get_dataloader(args)
+    _, _, test_dataloader = get_dataloader(args)
 
 
     def embedding_concat(x, y):

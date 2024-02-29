@@ -12,7 +12,7 @@ from torch.utils.data import DataLoader
 import torch.nn.functional as F
 import torchvision.transforms.functional as TF
 
-from utils.dataloader import get_paths_mvtec , get_paths_mvtec_loco
+from utils.dataloader import get_paths_mvtec , get_paths_mvtec_loco , get_paths_beantec
 
 
 
@@ -342,7 +342,6 @@ class JsonDataset(Dataset):
     def __len__(self):
         return len(self.files)
 
-# Configure dataloaders # TODO add code from dev
 
 def get_dataloader(args):
 

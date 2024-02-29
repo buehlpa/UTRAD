@@ -86,7 +86,6 @@ def get_paths_mvtec(args,verbose=True):
         sampled_anomalies_for_val = []
         validation_images = []
 
-    print("debug","got to load the data")
     if verbose:
         print(f'category: {category}, normals train:  {len(normal_images)}, anomalies test: {len(anomaly_images_test)}, normal test: {len(good_images_test)}')       
         print(f'anomalies test total:     {count_files_by_class(anomaly_images_test, anomaly_categories[category])}')
