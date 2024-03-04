@@ -7,6 +7,7 @@ import seaborn as sns
 
 
 def read_train_loss(PATH):
+    "reads all losses from the args.log file and returns a list of floats"
     with open(PATH, 'r') as file:
         lines = file.readlines()
         
@@ -16,6 +17,9 @@ def read_train_loss(PATH):
     return lines_new
 
 def read_validation_score(PATH):
+    """
+    reads the validation_result.log file and returns a dictionary with the metrics
+    """
     resdict={"image ROCAUC":[],"unalign image ROCAUC":[],"pixel ROCAUC":[],"unalign pixel ROCAUC":[]}
     with open(PATH, 'r') as file:
         lines = file.readlines()
@@ -33,13 +37,20 @@ def read_validation_score(PATH):
     return resdict
 
 def get_categories_from_run_path(PATH):
+    """
+     "/results/mvtec/contamination_0/Exp_11_02_24-bottle" 
+    gets all the unique categories "-category" at the end of path  
+    """
     regex_pattern = r'-(\w+)$'
     extracted_categories = [re.search(regex_pattern, category).group(1) for category in list(os.listdir(PATH))]
     extracted_categories=list(set(extracted_categories))
-    
     return extracted_categories
 
 def plot_losses(RESPATH,dataset,run,experiment):
+    
+    """_summary_
+    Plots the training loss for each category in the run e.g. contamination_0 
+    """
     
     RUN_PATH= os.path.join(RESPATH, dataset,run)
     categories=get_categories_from_run_path(RUN_PATH)
@@ -55,6 +66,12 @@ def plot_losses(RESPATH,dataset,run,experiment):
 
 
 def get_vals_per_category(RESPATH,dataset,run,experiment):
+    
+    """
+    gets a dictionary with the validation scores for each category in the run e.g. contamination_0
+
+    """
+    
     RUN_PATH= os.path.join(RESPATH, dataset,run)
     categories=get_categories_from_run_path(RUN_PATH)
     print(categories)
@@ -68,6 +85,9 @@ def get_vals_per_category(RESPATH,dataset,run,experiment):
     return resdict
 
 def plot_vals_per_category(RESPATH,dataset,run,experiment):
+    """_summary_
+    Plots the validation scores for each category in the run e.g. contamination_0
+    """
 
     resdict=get_vals_per_category(RESPATH,dataset,run,experiment)
     data_for_df = []
@@ -91,12 +111,37 @@ def plot_vals_per_category(RESPATH,dataset,run,experiment):
     plt.title(f' {experiment}  ,{run}'),plt.xlabel('Class'),plt.ylabel('Value'),plt.legend(title='Metric', loc='lower right'),plt.show()
 
 def plot_vals_per_category_and_contamination(RESPATH,dataset,experiment,category,contam_dir_list=["contamination_0","contamination_2","contamination_4","contamination_6","contamination_8","contamination_10"],metric="image ROCAUC"):
+    """
+    plots the validation scores for each category and contamination level
+    """
+    
     contam_list=[int(item.split("_")[-1]) for item in contam_dir_list]
     metric_list=[]
     for run in contam_dir_list:
         PATH= os.path.join(RESPATH, dataset,run,experiment+ f'{category}', "validation_result.log")
         resdict=read_validation_score(PATH)
         metric_list.append(resdict[metric][0])
+    plt.ylim(0.5,1.1)
+    plt.grid()
+    plt.plot(contam_list,metric_list)
+    plt.xlabel('Contamination in %' ),plt.ylabel(f'{metric}'),plt.title(f'{experiment}  ,{category}'),plt.show()
+    
+    
+    
+def plot_vals_per_category_and_contamination_multirun(RESPATH,dataset,experiment,category,contam_dir_list=["contamination_0","contamination_2","contamination_4","contamination_6","contamination_8","contamination_10"],metric="image ROCAUC"):
+    """
+    plots the validation scores for each category and contamination level
+    """
+    
+    contam_list=[int(item.split("_")[-1]) for item in contam_dir_list]
+    metric_list=[]
+    for run in contam_dir_list:
+        PATH= os.path.join(RESPATH, dataset,run,experiment+ f'{category}', "validation_result.log")
+        resdict=read_validation_score(PATH)
+        metric_list.append(resdict[metric][0])
+        
+        
+        
     plt.ylim(0.5,1.1)
     plt.grid()
     plt.plot(contam_list,metric_list)

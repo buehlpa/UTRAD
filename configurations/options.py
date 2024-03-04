@@ -35,7 +35,6 @@ class TrainOptions():
 
 
 ## TODO mode dataset  are equvivalent, remove trhough whole dataset
-## TODO add config file for each dataset..
 
     def parse(self):
         if not self.initialized:
