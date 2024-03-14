@@ -20,6 +20,31 @@ from sklearn.metrics import roc_curve
 from sklearn.metrics import precision_recall_curve
 from skimage.measure import label
 
+### DEV FOR Refinement strategy
+alpha=0.1 # assumed püortion of training data which is conatminated
+
+def weighted_loss(recon, outputs, alpha, epoch):
+    individual_losses = F.mse_loss(recon, outputs, reduction='none').mean([2, 3])  # Shape is (batch_size, channels)
+    flattened_losses = individual_losses.view(-1)
+
+    quantile = torch.quantile(flattened_losses, alpha)
+    lower = flattened_losses[flattened_losses <= quantile]
+    upper = flattened_losses[flattened_losses > quantile]
+
+    # exponential weight decay other functions possible here
+    b=0.5
+    lossweight=np.round(alpha * np.exp(-epoch*b),12)  
+    
+    ## linaer weight decay
+    # a=0.09
+    # lossweight = np.maximum(0, np.round((1 - alpha) -  epoch * a, 12))
+    
+    # weighted loss
+    total_loss_exp=(1-lossweight) * lower.mean() +  lossweight * upper.mean()
+    return total_loss_exp
+
+
+
 def main():
     args = TrainOptions().parse()
     
@@ -113,10 +138,11 @@ def main():
             recon, std = transformer(outputs)
             torch.cuda.empty_cache()
 
-            loss = criterion(recon, outputs)
-            loss_scale = criterion(std, torch.norm(recon - outputs, p = 2, dim = 1, keepdim = True).detach())
-
-            (loss+loss_scale).backward()
+            # only take alpha of loss
+            loss = weighted_loss(recon, outputs, alpha, epoch)
+    
+            loss_scale = criterion(std, torch.norm(recon - outputs, p = 2, dim = 1, keepdim = True).detach())            
+            (loss+loss_scale).backward() # loss scale does not get backprogated since detached!
 
             optimizer.step()
             torch.cuda.empty_cache()
@@ -131,6 +157,8 @@ def main():
                                                             avg_loss_scale / total)))
 
 
+        ## uncomment for saving
+        
         if best_loss > avg_loss and best_loss > loss:
             best_loss = avg_loss
             state_dict = {
@@ -146,6 +174,7 @@ def main():
         
         
         
+        ## ucomment for eval
         print("start evaluation on test set!")
         transformer.eval()
         score_map = []

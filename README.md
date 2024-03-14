@@ -35,3 +35,10 @@ bash [path] /run_multiple.sh
 # For differnet dataset
 # mvtec loco
 python main.py --exp_name Exp_17_02_24_baseline --data_category breakfast_box --mode mvtec_loco --data_set mvtec_loco --contamination_rate 0.0 --data_root /home/bule/projects/datasets/mvtec_loco_anomaly_detection
+
+
+
+# development of refinement 
+
+dev_refinement_main
+

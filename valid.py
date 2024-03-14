@@ -26,7 +26,11 @@ def main():
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     args = TrainOptions().parse()
-    torch.manual_seed(args.seed)
+    
+    if args.fixed_seed_bool:
+        torch.manual_seed(args.seed)
+    else:
+        torch.manual_seed(int(time.time()))
 
     EXPERIMENT_PATH = os.path.join(args.results_dir,args.data_set ,f'contamination_{int(args.contamination_rate*100)}',f'{args.exp_name}-{args.data_category}')
     SAVE_DIR= os.path.join(EXPERIMENT_PATH, args.model_result_dir, 'checkpoint.pth')

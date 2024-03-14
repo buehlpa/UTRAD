@@ -146,3 +146,38 @@ def plot_vals_per_category_and_contamination_multirun(RESPATH,dataset,experiment
     plt.grid()
     plt.plot(contam_list,metric_list)
     plt.xlabel('Contamination in %' ),plt.ylabel(f'{metric}'),plt.title(f'{experiment}  ,{category}'),plt.show()
+    
+    
+def plot_vals_per_category_and_contamination_multirun(RESPATH,dataset,experiment,category,reps=["_run_1","_run_2","_run_3","_run_4","_run_5"],contam_dir_list=["contamination_0","contamination_2","contamination_4","contamination_6","contamination_8","contamination_10"],metric="image ROCAUC"):
+    """
+    plots the validation scores for each category and contamination level
+    
+    experiment : str
+        experiment name e.g. "Exp_15_02_24"  # no "-" at the end
+    """
+    
+    contam_list=[int(item.split("_")[-1]) for item in contam_dir_list]
+    metric_dict={contam:[]  for contam in contam_dir_list}
+    
+    for contam in contam_dir_list:
+        for rep in reps:
+            exp_rep_category= experiment+rep + f'-{category}' # e.g. Exp_11_02_24_run_1-bottle
+            PATH= os.path.join(RESPATH, dataset,contam,exp_rep_category, "validation_result.log")
+            resdict=read_validation_score(PATH)
+            metric_dict[contam].append(resdict[metric][0])
+            
+            
+        
+    df=pd.DataFrame(metric_dict) 
+    fig, ax = plt.subplots()
+
+    for column in df.columns:
+        ax.boxplot(df[column], positions=[df.columns.get_loc(column) + 1])#, notch=True)
+        
+    ax.set_xticklabels(df.columns)
+    ax.set_xlabel('Contamination')
+    ax.set_ylabel('Value')
+    ax.set_title(f'mean over: {len(reps)} {experiment}  ,{category}')
+    ax.grid(True)  # Add grid
+
+    plt.show()

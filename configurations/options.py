@@ -14,6 +14,7 @@ class TrainOptions():
         self.parser.add_argument('--epoch_num',      type=int, default=150, help='number of epochs of training')
         self.parser.add_argument('--factor',         type=int, default= 1, help='not implemented yet')
         self.parser.add_argument('--seed',           type=int, default=233, help='random seed')
+        self.parser.add_argument('--fixed_seed_bool',type=bool, default=True, help='whether to use fixed seed, if False, seed is set to time.time()')
         self.parser.add_argument('--num_row',        type=int, default=4, help='number of image in a rows for display')
         self.parser.add_argument('--activation',     type=str, default='gelu', help='activation type for transformer')
         self.parser.add_argument('--unalign_test',  action='store_true', default=False, help='whether to valid with unaligned data: \ in this mode, test images are random ratate +-10degree, and randomcrop from 256x256 to 224x224')
@@ -30,6 +31,7 @@ class TrainOptions():
         self.parser.add_argument('--model_result_dir', type=str, default='saved_models', help=' where to save the checkpoints')
         self.parser.add_argument('--validation_image_dir', type=str, default='validation_images', help=' where to save the validation image')
         self.parser.add_argument('--contamination_rate', type=float, default=0.0, help='How much the training dataset is contaminated with anomalies from the test dataset max 0.1')
+        self.parser.add_argument('--assumed_contamination_rate', type=float, default=0.0, help='How much you assume that the training dataset is contaminated')
         self.parser.add_argument('--mode', type=str, default='utrad_mvtec', help='Which dataloader should be used: one of utrad_mvtec,mvtec, mvtec_loco, beantec,visa')
         self.parser.add_argument('--development', type=bool, default=False, help='used for development mode , some paths are not saved ')
 
