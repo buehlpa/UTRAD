@@ -102,6 +102,20 @@ def main():
     
     train_dataloader, valid_loader ,test_dataloader = get_dataloader(args)
 
+    # get save objs for all losses
+    trainsave={}
+    testsave={}
+    # TODO write save obj
+    for _,(filename, _) in enumerate(train_dataloader):
+        for name in filename:
+            trainsave[name] = []
+            
+    for _,(filename, _, _, _) in enumerate(test_dataloader):
+        for name in filename:
+            testsave[name] = []    
+
+
+
     def embedding_concat(x, y):
         B, C1, H1, W1 = x.size()
         _, C2, H2, W2 = y.size()
@@ -119,6 +133,7 @@ def main():
     flag = 0
     torch.set_printoptions(profile="full")
 
+
     for epoch in range(start_epoch, args.epoch_num):
         avg_loss = 0
         avg_loss_scale = 0
@@ -131,15 +146,26 @@ def main():
 
             with torch.no_grad():
                 _ = backbone(inputs)
-                #outputs = outputs[layer-1]
-                #outputs = embedding_concat(embedding_concat(embedding_concat(inputs,outputs[0]),outputs[1]),outputs[2])
+                # outputs = outputs[layer-1]
+                # outputs = embedding_concat(embedding_concat(embedding_concat(inputs,outputs[0]),outputs[1]),outputs[2])
                 outputs = embedding_concat(embedding_concat(outputs[0],outputs[1]),outputs[2])
-        
+
+
             recon, std = transformer(outputs)
             torch.cuda.empty_cache()
 
-            # only take alpha of loss
-            loss = weighted_loss(recon, outputs, alpha, epoch)
+
+            ### weighted loss
+            #loss = weighted_loss(recon, outputs, alpha, epoch)
+            
+            loss = criterion(recon, outputs)
+            
+            # save individual losses
+            individual_losses = F.mse_loss(recon, outputs, reduction='none').mean([2, 3]).detach().cpu()  # Shape is (batch_size, channels)
+            for p in range(len(filename)):
+                trainsave[filename[p]].append(individual_losses[p])
+            
+
     
             loss_scale = criterion(std, torch.norm(recon - outputs, p = 2, dim = 1, keepdim = True).detach())            
             (loss+loss_scale).backward() # loss scale does not get backprogated since detached!
@@ -189,8 +215,12 @@ def main():
                 outputs = embedding_concat(embedding_concat(outputs[0],outputs[1]),outputs[2])
                 recon, std = transformer(outputs)
                 
-                
-                
+                # add to save object
+                individual_losses_test = F.mse_loss(recon, outputs, reduction='none').mean([2, 3]).detach().cpu()  # Shape is (batch_size, channels)
+                for p in range(len(name)):
+                    testsave[name[p]].append(individual_losses_test[p])
+                    
+                    
                 batch_size, channels, width, height = recon.size()
                 dist = torch.norm(recon - outputs, p = 2, dim = 1, keepdim = True).div(std.abs())
                 dist = dist.view(batch_size, 1, width, height)
@@ -243,6 +273,14 @@ def main():
         with open(os.path.join(EXPERIMENT_PATH,'args.log') ,"a") as train_log:
             train_log.write("\r[Epoch%d]-[Loss:%f]-[Loss_scale:%f]-[image_AUC:%f]-[pixel_AUC:%f]" %
                                                         (epoch+1, avg_loss / total, avg_loss_scale / total, img_roc_auc, per_pixel_rocauc))
-
+        
+        
+        
+        
+        
+        # Saving the dictionary
+    torch.save(trainsave, os.path.join(EXPERIMENT_PATH,'trainsave.pth'))
+    torch.save(testsave,  os.path.join(EXPERIMENT_PATH,'testsave.pth'))    
+        
 if __name__ == '__main__':
     main()
