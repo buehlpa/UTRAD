@@ -103,16 +103,27 @@ def main():
     train_dataloader, valid_loader ,test_dataloader = get_dataloader(args)
 
     # get save objs for all losses
-    trainsave={}
-    testsave={}
-    # TODO write save obj
+    trainsave_ind_loss={} # individual losses
+    trainsave_loss_orig={} # original by paper loss
+    
+    testsave_ind_loss={} # individual losses
+    testsave_loss_orig={} # original by paper loss
+    testsave_score_after_interpolation={} # score after interpolation
+    testsave_score_end={}                 # score after end of network final score
+    
+    
     for _,(filename, _) in enumerate(train_dataloader):
-        for name in filename:
-            trainsave[name] = []
+        for name_ in filename:
+            trainsave_ind_loss[name_] = []
+            trainsave_loss_orig[name_] = []
             
     for _,(filename, _, _, _) in enumerate(test_dataloader):
-        for name in filename:
-            testsave[name] = []    
+        for name_ in filename:
+            testsave_ind_loss[name_] = []    
+            testsave_loss_orig[name_] = []  
+            testsave_score_after_interpolation[name_] = []
+            testsave_score_end[name_] = []
+
 
 
 
@@ -149,30 +160,34 @@ def main():
                 # outputs = outputs[layer-1]
                 # outputs = embedding_concat(embedding_concat(embedding_concat(inputs,outputs[0]),outputs[1]),outputs[2])
                 outputs = embedding_concat(embedding_concat(outputs[0],outputs[1]),outputs[2])
-
-
+                
             recon, std = transformer(outputs)
             torch.cuda.empty_cache()
-
-
+            
             ### weighted loss
             #loss = weighted_loss(recon, outputs, alpha, epoch)
             
+            
+            # TODO Investigate this backpropagation..
             loss = criterion(recon, outputs)
+            loss_scale = criterion(std, torch.norm(recon - outputs, p = 2, dim = 1, keepdim = True).detach())   
+        
+            (loss+loss_scale).backward()    
             
-            # save individual losses
-            individual_losses = F.mse_loss(recon, outputs, reduction='none').mean([2, 3]).detach().cpu()  # Shape is (batch_size, channels)
+            
+            # ## save individual losses
+            individual_losses = F.mse_loss(recon, outputs, reduction='none').mean([2, 3]).detach().cpu()  # Shape is (batch_size, channels)                 
             for p in range(len(filename)):
-                trainsave[filename[p]].append(individual_losses[p])
+                trainsave_ind_loss[filename[p]].append(individual_losses[p])
+            # save original loss
+            for l in range(len(filename)):
+                ind_loss=criterion(recon[l], outputs[l]).detach().cpu()
+                trainsave_loss_orig[filename[l]].append(ind_loss)
             
-
-    
-            loss_scale = criterion(std, torch.norm(recon - outputs, p = 2, dim = 1, keepdim = True).detach())            
-            (loss+loss_scale).backward() # loss scale does not get backprogated since detached!
-
+            
             optimizer.step()
             torch.cuda.empty_cache()
-
+            
             avg_loss += loss * inputs.size(0)
             avg_loss_scale += loss_scale * inputs.size(0)
             total += inputs.size(0)
@@ -181,8 +196,7 @@ def main():
                                                             i, len(train_dataloader),
                                                             avg_loss / total,
                                                             avg_loss_scale / total)))
-
-
+            
         ## uncomment for saving
         
         if best_loss > avg_loss and best_loss > loss:
@@ -195,14 +209,15 @@ def main():
                         'best_loss':best_loss
                 }
             torch.save(state_dict, SAVE_DIR)
-            
+        # train end per epoch 
+        
         ## TODO add validation with data not from testset , loop 
-        
-        
-        
         ## ucomment for eval
         print("start evaluation on test set!")
         transformer.eval()
+        
+        
+        names=[]
         score_map = []
         gt_list = []
         gt_mask_list = []
@@ -215,14 +230,20 @@ def main():
                 outputs = embedding_concat(embedding_concat(outputs[0],outputs[1]),outputs[2])
                 recon, std = transformer(outputs)
                 
-                # add to save object
+                # SAVE the losses
                 individual_losses_test = F.mse_loss(recon, outputs, reduction='none').mean([2, 3]).detach().cpu()  # Shape is (batch_size, channels)
-                for p in range(len(name)):
-                    testsave[name[p]].append(individual_losses_test[p])
+                
+                for pi in range(len(name)):
+                    testsave_ind_loss[name[pi]].append(individual_losses_test[pi])
                     
+                    
+                for li in range(len(name)):
+                    ind_loss=criterion(recon[li], outputs[li]).detach().cpu()
+                    testsave_loss_orig[name[li]].append(ind_loss)
                     
                 batch_size, channels, width, height = recon.size()
                 dist = torch.norm(recon - outputs, p = 2, dim = 1, keepdim = True).div(std.abs())
+                
                 dist = dist.view(batch_size, 1, width, height)
                 patch_normed_score = []
                 for j in range(4):
@@ -233,6 +254,7 @@ def main():
                     patch_score = F.avg_pool2d(dist,patch_size,patch_size)
                     patch_score = F.interpolate(patch_score, (width,height), mode='bilinear', align_corners=False)
                     patch_normed_score.append(patch_score)
+                    
                 score = torch.zeros(batch_size,1,64,64).to(device)
                 for j in range(4):
                     score = embedding_concat(score, patch_normed_score[j])
@@ -241,23 +263,40 @@ def main():
                         weight=torch.tensor([[[[0.0]],[[0.25]],[[0.25]],[[0.25]],[[0.25]]]]).to(device), 
                         bias=None, stride=1, padding=0, dilation=1)
                 score = F.interpolate(score, (ground_truth.size(2),ground_truth.size(3)), mode='bilinear', align_corners=False)
+                
                 heatmap = score.repeat(1,3,1,1)
                 score_map.append(score.cpu())
                 gt_mask_list.append(ground_truth.cpu())
                 gt_list.append(gt)
+                for name_i in name:
+                    names.append(name_i)
+        # test end per epoch
+        
+        
         
         score_map = torch.cat(score_map,dim=0)
-        
         gt_mask_list = torch.cat(gt_mask_list,dim=0)
         gt_list = torch.cat(gt_list,dim=0)
 
+
+        unnormalized_scores = score_map.view(score_map.size(0),-1).max(dim=1)[0]
         # Normalization
         max_score = score_map.max()
         min_score = score_map.min()
         scores = (score_map - min_score) / (max_score - min_score)
         
+        # FINAL SCORE
+        
+        
         # calculate image-level ROC AUC score
         img_scores = scores.view(scores.size(0),-1).max(dim=1)[0]
+        
+        for i in range(len(names)):
+                testsave_score_after_interpolation[names[i]].append(unnormalized_scores[i]) 
+                testsave_score_end[names[i]].append(img_scores[i]) 
+            
+            
+        
         gt_list = gt_list.numpy()
         fpr, tpr, _ = roc_curve(gt_list, img_scores)
         img_roc_auc = roc_auc_score(gt_list, img_scores)
@@ -273,14 +312,17 @@ def main():
         with open(os.path.join(EXPERIMENT_PATH,'args.log') ,"a") as train_log:
             train_log.write("\r[Epoch%d]-[Loss:%f]-[Loss_scale:%f]-[image_AUC:%f]-[pixel_AUC:%f]" %
                                                         (epoch+1, avg_loss / total, avg_loss_scale / total, img_roc_auc, per_pixel_rocauc))
+        #epoch end
         
         
-        
-        
-        
-        # Saving the dictionary
-    torch.save(trainsave, os.path.join(EXPERIMENT_PATH,'trainsave.pth'))
-    torch.save(testsave,  os.path.join(EXPERIMENT_PATH,'testsave.pth'))    
+    # Saving the dictionary
+    torch.save(trainsave_ind_loss, os.path.join(EXPERIMENT_PATH,'trainsave_ind_loss.pth'))
+    torch.save(trainsave_loss_orig,  os.path.join(EXPERIMENT_PATH,'trainsave_loss_orig.pth'))    
+    torch.save(testsave_ind_loss, os.path.join(EXPERIMENT_PATH,'testsave_ind_loss.pth'))
+    torch.save(testsave_loss_orig,  os.path.join(EXPERIMENT_PATH,'testsave_loss_orig.pth')) 
+    torch.save(testsave_score_end, os.path.join(EXPERIMENT_PATH,'testsave_score_end.pth'))
+    torch.save(testsave_score_after_interpolation, os.path.join(EXPERIMENT_PATH,'testsave_score_after_interpolation.pth'))       
+    
         
 if __name__ == '__main__':
     main()
