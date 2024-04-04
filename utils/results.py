@@ -1,4 +1,6 @@
 import matplotlib.pyplot as plt
+from sklearn.metrics import precision_recall_curve, roc_auc_score, roc_curve, average_precision_score
+
 import pandas as pd
 import re
 import os
@@ -179,5 +181,41 @@ def plot_vals_per_category_and_contamination_multirun(RESPATH,dataset,experiment
     ax.set_ylabel('Value')
     ax.set_title(f'mean over: {len(reps)} {experiment}  ,{category}')
     ax.grid(True)  # Add grid
+
+    plt.show()
+    
+    
+def plot_curves_with_metrics(true_classes, predicted_probs):
+    # Compute precision, recall, and thresholds for the precision-recall curve
+    precision, recall, _ = precision_recall_curve(true_classes, predicted_probs)
+    ap = average_precision_score(true_classes, predicted_probs)
+
+    # Compute false positive rate and true positive rate for ROC curve
+    fpr, tpr, _ = roc_curve(true_classes, predicted_probs)
+    auroc = roc_auc_score(true_classes, predicted_probs)
+
+    # Plot Precision-Recall curve
+    plt.figure(figsize=(10, 5))
+    plt.subplot(1, 2, 1)
+    plt.plot(recall, precision, marker='.', label=f'(AP={ap:.4f})')
+    plt.xlabel('Recall')
+    plt.ylabel('Precision')
+    plt.title('Precision-Recall Curve')
+    plt.grid(True)
+
+    # Plot ROC curve
+    plt.subplot(1, 2, 2)
+    plt.plot(fpr, tpr, marker='.', label=f' (AUROC={auroc:.4f})')
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
+    plt.title('ROC Curve')
+    plt.grid(True)
+    plt.tight_layout()
+
+    # Add legend with metrics
+    plt.subplot(1, 2, 1)
+    plt.legend()
+    plt.subplot(1, 2, 2)
+    plt.legend()
 
     plt.show()
