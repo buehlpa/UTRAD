@@ -18,7 +18,7 @@ class TrainOptions():
         self.parser.add_argument('--num_row',        type=int, default=4, help='number of image in a rows for display')
         self.parser.add_argument('--activation',     type=str, default='gelu', help='activation type for transformer')
         self.parser.add_argument('--unalign_test',  action='store_true', default=False, help='whether to valid with unaligned data: \ in this mode, test images are random ratate +-10degree, and randomcrop from 256x256 to 224x224')
-        self.parser.add_argument('--data_root', type=str, default='/home/bule/datasets/mvtec_anomaly_detection/', help='dir of the dataset')
+        self.parser.add_argument('--data_root', type=str, default='/home/bule/projects/datasets/mvtec_anomaly_detection/', help='dir of the dataset')
         self.parser.add_argument('--data_category', type=str, default="cable", help='category name of the dataset')
         self.parser.add_argument('--data_set', type=str, default="mvtec", help='dataset , mvtec , mvtec_loco, beantec')
         self.parser.add_argument('--batch_size', type=int, default=2, help='size of the batches')
