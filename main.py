@@ -115,7 +115,6 @@ def main():
 
             loss = criterion(recon, outputs)
             loss_scale = criterion(std, torch.norm(recon - outputs, p = 2, dim = 1, keepdim = True).detach())
-
             (loss+loss_scale).backward()
 
             optimizer.step()
