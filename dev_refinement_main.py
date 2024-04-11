@@ -110,6 +110,8 @@ def main():
     testsave_loss_orig={} # original by paper loss
     testsave_score_after_interpolation={} # score after interpolation
     testsave_score_end={}                 # score after end of network final score
+    gt_test={}
+    
     
     
     for _,(filename, _) in enumerate(train_dataloader):
@@ -123,6 +125,7 @@ def main():
             testsave_loss_orig[name_] = []  
             testsave_score_after_interpolation[name_] = []
             testsave_score_end[name_] = []
+            gt_test[name_] = []
 
 
 
@@ -221,6 +224,7 @@ def main():
         score_map = []
         gt_list = []
         gt_mask_list = []
+        
         for i,(name ,batch, ground_truth, gt) in enumerate(test_dataloader):
             with torch.no_grad():
                 inputs = batch.to(device)
@@ -295,6 +299,7 @@ def main():
         for i in range(len(names)):
                 testsave_score_after_interpolation[names[i]].append(unnormalized_scores[i]) 
                 testsave_score_end[names[i]].append(img_scores[i]) 
+                
             
             
         

@@ -15,6 +15,7 @@ class TrainOptions():
         self.parser.add_argument('--factor',         type=int, default= 1, help='not implemented yet')
         self.parser.add_argument('--seed',           type=int, default=233, help='random seed')
         self.parser.add_argument('--fixed_seed_bool',type=bool, default=True, help='whether to use fixed seed, if False, seed is set to time.time()')
+        self.parser.add_argument('--test_seed',      type=int, default=400, help='If there is contaminatin -> set seed of testset differently')
         self.parser.add_argument('--num_row',        type=int, default=4, help='number of image in a rows for display')
         self.parser.add_argument('--activation',     type=str, default='gelu', help='activation type for transformer')
         self.parser.add_argument('--unalign_test',  action='store_true', default=False, help='whether to valid with unaligned data: \ in this mode, test images are random ratate +-10degree, and randomcrop from 256x256 to 224x224')

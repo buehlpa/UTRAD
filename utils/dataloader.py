@@ -75,7 +75,7 @@ def get_paths_mvtec(args,verbose=True):
     
     n_samples = int(len(normal_images)*args.contamination_rate)
     
-    sampled_anomalies_for_train, remaining_anomalies_test = stratified_sample(anomaly_images_test, anomaly_categories[category], n_samples, args.seed)
+    sampled_anomalies_for_train, remaining_anomalies_test = stratified_sample(anomaly_images_test, anomaly_categories[category], n_samples, args.test_seed)
 
     if validation_split > 0:
         if validation!= True:
@@ -124,7 +124,7 @@ def get_paths_mvtec_loco(args,verbose=True):
     
     
     
-    sampled_anomalies_for_train, remaining_anomalies_test = stratified_sample(anomaly_images_test,anomaly_categories[category], n_samples, args.seed)
+    sampled_anomalies_for_train, remaining_anomalies_test = stratified_sample(anomaly_images_test,anomaly_categories[category], n_samples, args.test_seed)
 
     if validation:
         warnings.warn(f"Vaidation split is set to {validation_split}, but the dataset is already split into train and validation sets by publisher. Ignoring validation split ratio.")
@@ -165,7 +165,7 @@ def get_paths_beantec(args,verbose=True):
 
     
     n_samples = int(len(normal_images)*args.contamination_rate)
-    sampled_anomalies_for_train, remaining_anomalies_test = stratified_sample(anomaly_images_test, anomaly_categories[category], n_samples, args.seed)
+    sampled_anomalies_for_train, remaining_anomalies_test = stratified_sample(anomaly_images_test, anomaly_categories[category], n_samples, args.test_seed)
 
     if validation_split > 0:
         if validation!= True:
