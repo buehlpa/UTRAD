@@ -299,7 +299,7 @@ def main():
         for i in range(len(names)):
                 testsave_score_after_interpolation[names[i]].append(unnormalized_scores[i]) 
                 testsave_score_end[names[i]].append(img_scores[i]) 
-                
+                gt_test[names[i]].append(gt_list[i])
             
             
         
