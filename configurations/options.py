@@ -52,6 +52,7 @@ class TrainOptions():
             with open(os.path.join('configurations',f'{args.data_set}.json' ), 'r') as file:
                 dataset_parameters = json.load(file)
             setattr(args, 'dataset_parameters', dataset_parameters)
+            
         except FileNotFoundError:
             print(f"Configuration file for {args.data_set} not found. Proceeding with default parameters.")
             setattr(args, 'dataset_parameters', {})
