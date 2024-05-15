@@ -183,3 +183,8 @@ def get_paths_beantec(args,verbose=True):
         print(f'anomalies test remaining: {count_files_by_class(remaining_anomalies_test, anomaly_categories[category])}')
     
     return normal_images, validation_images, sampled_anomalies_for_train, sampled_anomalies_for_val, good_images_test, remaining_anomalies_test
+
+
+## splits
+
+

@@ -219,3 +219,84 @@ def plot_curves_with_metrics(true_classes, predicted_probs):
     plt.legend()
 
     plt.show()
+
+
+# splits
+
+def plot_splits(train_ind_ls, idx, train_datashuffled, n_train_sets, anocats, category, stride, window_size, splittype='USDR', EXPERIMENT_PATH=None):
+    """Plot training and inference splits with different colors for different anomaly categories.
+
+    Args:
+        train_ind_ls (list of lists): List of lists of indices for each training set.
+        idx (array-like): Indices of the data.
+        train_datashuffled (list of str): List of paths shuffled according to the indices.
+        n_train_sets (int): Number of sets to plot.
+        anocats (list of str): Anomaly categories to plot.
+        category (str): Current category being plotted.
+        stride (int): Stride used in splitting the data.
+        window_size (int): Window size used in splitting the data.
+        splittype (str): Type of split.
+        EXPERIMENT_PATH (str): Path to save the plot if specified.
+    """
+
+    ano_cols = ['blue', 'green', 'red', 'cyan', 'magenta', 'yellow', 'black', 'white']  # Anomaly colors
+    colorvec = ['blue'] * len(train_datashuffled)  # All colors to blue (base is normal)
+
+    for i, cat in enumerate(anocats):
+        for id_, (col, path) in enumerate(zip(colorvec, train_datashuffled)):
+            if cat in path:
+                colorvec[id_] = ano_cols[i + 1]
+
+    cats_with_good = ['good'] + anocats
+
+    boolmat = []
+    for i in range(n_train_sets):
+        boolmat.append(np.isin(idx, train_ind_ls[i]))
+
+    # Creating x and y coordinates for True and False values
+    true_points_x = []
+    true_points_y = []
+    false_points_x = []
+    false_points_y = []
+    true_color = []
+    false_color = []
+
+    for i, row in enumerate(boolmat):
+        for j, value in enumerate(row):
+            if value:
+                true_points_x.append(j)
+                true_points_y.append(i)
+                true_color.append(colorvec[j])
+            else:
+                false_points_x.append(j)
+                false_points_y.append(i)
+                false_color.append(colorvec[j])
+
+    plt.figure(figsize=(25, 6))
+    plt.grid(True, alpha=0.2)
+    plt.scatter(true_points_x, true_points_y, c=true_color, marker='^', label='Train')
+    plt.scatter(false_points_x, false_points_y, c=false_color, marker=".", label='Infer')
+
+    # Add categories to the legend
+    handles, labels = plt.gca().get_legend_handles_labels()
+    for cat, col in zip(cats_with_good, ano_cols):
+        handles.append(plt.Line2D([0], [0], marker='o', color='w', markerfacecolor=col, markersize=10))
+        labels.append(cat)
+
+    plt.title(f'Type:{splittype}, {n_train_sets} Sets; window size: {window_size}, stride: {stride}, category: {category}')
+    plt.xlabel('Sample Nr')
+    plt.ylabel('Training Set NR.')
+
+    plt.legend(handles=handles, labels=labels, loc='center left', bbox_to_anchor=(1, 0.5))
+
+    if EXPERIMENT_PATH is not None:
+        filename = f'Type_{splittype}_{n_train_sets}_Sets_window_size_{window_size}_stride_{stride}_category_{category}.svg'
+        save_path = os.path.join(EXPERIMENT_PATH, filename)
+        plt.savefig(save_path, format='svg')
+        
+        filename = f'Type_{splittype}_{n_train_sets}_Sets_window_size_{window_size}_stride_{stride}_category_{category}.png'
+        save_path = os.path.join(EXPERIMENT_PATH, filename)
+        plt.savefig(save_path, format='png')
+        plt.close()
+    else:
+        plt.show()
