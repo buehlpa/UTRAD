@@ -44,6 +44,10 @@ def main():
     idx = np.arange(N_samples)
     np.random.shuffle(idx)
 
+
+
+    # VISUALISIERUG MIT 2 HISOGRAMMS PER SPLIT (TRAIN, TEST) NORMALE/ ABNOMRLAIN I N SPOLIT OUT OIF SPLIT
+    # 8 SPLITS / HÄLFTE ÜBERLAPPT
     stride =45
     window_size = 120
 
@@ -105,6 +109,9 @@ def main():
         paths_j = [train_data[idx] for idx in train_ind_ls[j]]
         dataset_j=ImageDataset_mvtec(args,DATA_PATH,mode='train',train_paths = paths_j, test_paths = None)
         train_j_dataloader = DataLoader(dataset_j, batch_size=2,shuffle=False,num_workers=8,drop_last=False)
+        
+        
+        #save paths on 
         
         #train_dataloader, valid_loader ,test_dataloader = get_dataloader(args)
 
@@ -173,7 +180,6 @@ def main():
                 _ = backbone(inputs)
                 outputs = embedding_concat(embedding_concat(outputs[0],outputs[1]),outputs[2])
                 recon, std = transformer(outputs)
-                
                 
                 
                 batch_size, channels, width, height = recon.size()
