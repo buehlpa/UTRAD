@@ -363,14 +363,10 @@ def get_dataloader(args):
             if args.mode == 'mvtec_loco':
                 normal_images, validation_images, sampled_anomalies_for_train, sampled_anomalies_for_val, good_images_test, remaining_anomalies_test = get_paths_mvtec_loco(args,verbose=True)
 
-                
+            # sample from train paths if less trainming data should be used
             train_paths = normal_images + sampled_anomalies_for_train
-            
-            
             train_paths=random.sample(train_paths,int(train_paths*args.data_ratio))
                     
-                    
-            
             valid_paths = validation_images + sampled_anomalies_for_val
             test_paths = good_images_test + remaining_anomalies_test
             experiment_paths={'train':train_paths,'test':test_paths,'valid':valid_paths,'contamination_rate':args.contamination_rate,'seed':args.seed}
