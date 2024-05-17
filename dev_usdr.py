@@ -67,7 +67,7 @@ def main():
     train_ind_ls = []
     for i in range(train_sets):
         train_ind_ls.append(idx[np.arange(i * stride, i * stride + window_size) % N_samples])
-        
+    #save split plot  
     plot_splits(train_ind_ls, idx, all_data_paths, train_sets, anocat, args.data_category, stride, window_size,splittype='USDR',EXPERIMENT_PATH=EXPERIMENT_PATH)
 
     all_data_set=ImageDataset_mvtec(args,DATA_PATH,mode='train',train_paths = all_data_paths,test_paths = None)

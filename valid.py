@@ -66,6 +66,9 @@ def main():
     #backbone.layer4[-1].register_forward_hook(hook)
     layer = 3
 
+
+    #TODO add paths from smaller testset
+
     _, _, test_dataloader = get_dataloader(args)
 
 

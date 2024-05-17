@@ -355,7 +355,7 @@ def get_dataloader(args):
             with open(os.path.join(EXPERIMENT_LOG_PATH,"experiment_paths.json"), "r") as file:
                 experiment_paths = json.load(file)
                 print("sucessfully loaded experiment paths")   
-                  
+                
         else:    
             if args.mode == 'mvtec':    
                 normal_images, validation_images, sampled_anomalies_for_train, sampled_anomalies_for_val, good_images_test, remaining_anomalies_test = get_paths_mvtec(args,verbose=True)
@@ -365,7 +365,7 @@ def get_dataloader(args):
 
             # sample from train paths if less trainming data should be used
             train_paths = normal_images + sampled_anomalies_for_train
-            train_paths=random.sample(train_paths,int(train_paths*args.data_ratio))
+            train_paths=random.sample(train_paths,int(len(train_paths)*args.data_ratio))
                     
             valid_paths = validation_images + sampled_anomalies_for_val
             test_paths = good_images_test + remaining_anomalies_test
@@ -376,6 +376,7 @@ def get_dataloader(args):
                 with open(os.path.join(EXPERIMENT_LOG_PATH,"experiment_paths.json"), "w") as file:
                     json.dump(experiment_paths, file)
         
+        
         DATA_PATH=os.path.join(args.data_root,args.data_category)
         train_dataloader = DataLoader(ImageDataset_mvtec(args,DATA_PATH,mode='train',train_paths = experiment_paths['train'],test_paths = None),
                                                         batch_size=args.batch_size,shuffle=True,num_workers=args.n_cpu,drop_last=False)
@@ -384,6 +385,7 @@ def get_dataloader(args):
                                                 batch_size=args.batch_size,shuffle=False,num_workers=1,drop_last=False)
         else:
             valid_dataloader = None
+            
         test_dataloader = DataLoader(ImageDataset_mvtec(args,DATA_PATH,mode='test',train_paths = None,test_paths = experiment_paths['test']),
                                                         batch_size=args.batch_size,shuffle=False,num_workers=1,drop_last=False)
     
@@ -400,7 +402,9 @@ def get_dataloader(args):
                 
         else:    
             normal_images, validation_images, sampled_anomalies_for_train, sampled_anomalies_for_val, good_images_test, remaining_anomalies_test = get_paths_beantec(args,verbose=True)    
+            
             train_paths = normal_images + sampled_anomalies_for_train
+            train_paths=random.sample(train_paths,int(len(train_paths)*args.data_ratio))
             valid_paths = validation_images + sampled_anomalies_for_val
             test_paths = good_images_test + remaining_anomalies_test
             experiment_paths={'train':train_paths,'test':test_paths,'valid':valid_paths,'contamination_rate':args.contamination_rate,'seed':args.seed}

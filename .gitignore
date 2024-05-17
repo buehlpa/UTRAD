@@ -7,7 +7,7 @@ __pycache__/
 *.onnx
 *.jpg
 *.png
-
+*.pkl
 *.pth
 # C extensions
 *.so

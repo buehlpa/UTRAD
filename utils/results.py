@@ -18,6 +18,26 @@ def read_train_loss(PATH):
     lines_new=[float(re.findall(r"Loss:(\d+\.\d+)", item)[0]) for item in lines]
     return lines_new
 
+def read_training_scores(PATH):
+    """
+    reads the validation_result.log file and returns a dictionary with the metrics
+    """
+    resdict={"Loss":[],"Loss_scale":[],"image_AUC":[],"pixel_AUC":[]}
+    with open(PATH, 'r') as file:
+        lines = file.readlines()
+        lines = [line.strip() for line in lines]     
+
+    for key in resdict.keys():
+        pattern = f"{key}"+r':\s*(\d+\.\d+)'
+        lines_new=[]
+        for line in lines:
+            match = re.search(pattern, line)  
+            if match:
+                lines_new.append(match.group(1))       
+        lines_new=[float(item) for item in lines_new]          
+        resdict[key]=lines_new
+    return resdict
+
 def read_validation_score(PATH):
     """
     reads the validation_result.log file and returns a dictionary with the metrics
