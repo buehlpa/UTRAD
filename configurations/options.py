@@ -31,6 +31,7 @@ class TrainOptions():
         self.parser.add_argument('--image_result_dir', type=str, default='result_images', help=' where to save the result images')
         self.parser.add_argument('--model_result_dir', type=str, default='saved_models', help=' where to save the checkpoints')
         self.parser.add_argument('--validation_image_dir', type=str, default='validation_images', help=' where to save the validation image')
+        self.parser.add_argument('--data_ratio', type=float, default=1.0, help='Ratio on How much of the training data should be used max 1.0')
         self.parser.add_argument('--contamination_rate', type=float, default=0.0, help='How much the training dataset is contaminated with anomalies from the test dataset max 0.1')
         self.parser.add_argument('--assumed_contamination_rate', type=float, default=0.0, help='How much you assume that the training dataset is contaminated')
         self.parser.add_argument('--mode', type=str, default='utrad_mvtec', help='Which dataloader should be used: one of utrad_mvtec,mvtec, mvtec_loco, beantec,visa')

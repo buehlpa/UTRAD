@@ -365,6 +365,12 @@ def get_dataloader(args):
 
                 
             train_paths = normal_images + sampled_anomalies_for_train
+            
+            
+            train_paths=random.sample(train_paths,int(train_paths*args.data_ratio))
+                    
+                    
+            
             valid_paths = validation_images + sampled_anomalies_for_val
             test_paths = good_images_test + remaining_anomalies_test
             experiment_paths={'train':train_paths,'test':test_paths,'valid':valid_paths,'contamination_rate':args.contamination_rate,'seed':args.seed}

@@ -117,7 +117,7 @@ def main():
 
         paths_j = [train_data[idx] for idx in train_ind_ls[j]]
         dataset_j=ImageDataset_mvtec(args,DATA_PATH,mode='train',train_paths = paths_j, test_paths = None)
-        train_j_dataloader = DataLoader(dataset_j, batch_size=2,shuffle=False,num_workers=8,drop_last=False)
+        train_j_dataloader = DataLoader(dataset_j, batch_size=2,shuffle=True,num_workers=8,drop_last=False)
         
         # with open(os.path.join(EXPERIMENT_PATH,model_result_m,"experiment_paths.json"), "w") as file:
         #         json.dump(paths_j, file)
