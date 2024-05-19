@@ -58,8 +58,8 @@ def main():
 
     # VISUALIZATION WITH 2 HISTOGRAMS PER SPLIT (TRAIN, TEST) NORMAL/ABNORMAL IN SPLIT OUT OF SPLIT
     ##USDR
-    stride = 42
-    window_size = 182
+    stride = 70
+    window_size = 200
     # Create train sets
     shifts = np.floor(N_samples / stride)
     train_sets = int(shifts)
