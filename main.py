@@ -29,6 +29,7 @@ def main():
         for k, v in sorted(vars(args).items()):
             print('%s: %s ' % (str(k), str(v)))
             args_log.write('%s: %s \n' % (str(k), str(v)))
+            
     print('step')
     if args.fixed_seed_bool:
         torch.manual_seed(args.seed)

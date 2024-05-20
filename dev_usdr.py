@@ -17,33 +17,71 @@ import json
 import cv2
 from utils.results import *
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-
+import time
+import sys
 from utils.dataloader import get_paths_mvtec
 from datasets import ImageDataset_mvtec
 from torch.utils.data import DataLoader
 import copy
 from configurations.options import TrainOptions
-
+import random
 
 def main():
     args = TrainOptions().parse()
 
-    torch.manual_seed(args.seed)
+    if args.fixed_seed_bool:
+        torch.manual_seed(args.seed)
+        np.random.seed(args.seed)
+        torch.cuda.manual_seed(args.seed)
+    else:
+        torch.manual_seed(int(time.time()))
+        np.random.seed(int(time.time()))
+        torch.cuda.manual_seed(int(time.time()))
     
     EXPERIMENT_PATH = os.path.join(args.results_dir,args.data_set ,f'contamination_{int(args.contamination_rate*100)}',f'{args.exp_name}-{args.data_category}')
-
-    normal_images, validation_images, sampled_anomalies_for_train, sampled_anomalies_for_val, good_images_test, remaining_anomalies_test = get_paths_mvtec(args,verbose=True)
-    DATA_PATH=os.path.join(args.data_root,args.data_category)
-    # combine good and anomalies
-    train_data=normal_images+sampled_anomalies_for_train
-    labels_train=[0]*len(normal_images)+[1]*len(sampled_anomalies_for_train)
-
+    
+    with open(os.path.join(EXPERIMENT_PATH,'args.log') ,"a") as args_log:
+        for k, v in sorted(vars(args).items()):
+            print('%s: %s ' % (str(k), str(v)))
+            args_log.write('%s: %s \n' % (str(k), str(v)))
+    
+    if args.data_set == 'mvtec':
+        normal_images, validation_images, sampled_anomalies_for_train, sampled_anomalies_for_val, good_images_test, remaining_anomalies_test = get_paths_mvtec(args,verbose=True)
+                # sample from train paths if less trainming data should be used
+        train_paths = normal_images + sampled_anomalies_for_train
+        train_paths=random.sample(train_paths,int(len(train_paths)*args.data_ratio))
+                
+        valid_paths = validation_images + sampled_anomalies_for_val
+        test_paths = good_images_test + remaining_anomalies_test
+        experiment_paths={'train':train_paths,'test':test_paths,'valid':valid_paths,'contamination_rate':args.contamination_rate,'seed':args.seed}
+        
+        if not args.development:
+            os.makedirs(EXPERIMENT_PATH, exist_ok=True)
+            print(f"Saving experiment paths to {EXPERIMENT_PATH}")
+            with open(os.path.join(EXPERIMENT_PATH,"experiment_paths.json"), "w") as file:
+                json.dump(experiment_paths, file)
+                print("Experiment paths saved")
+                
+        DATA_PATH=os.path.join(args.data_root,args.data_category)
+        # combine good and anomalies
+        train_data=normal_images+sampled_anomalies_for_train
+        labels_train=[0]*len(normal_images)+[1]*len(sampled_anomalies_for_train)
+    
+        
+        
+    # TODO does not really save paths   
+    else:
+        print("Not implemented for other datasets than MVTEC yet")
+        sys.exit()
+    
 
     np.random.seed(args.seed)
     N_samples = len(train_data)
     idx = np.arange(N_samples)
     np.random.shuffle(idx)
-
+    sys.exit()
+    # shuffle all the paths 
+    
     all_data_paths=[train_data[id]for id in idx]
     ano_cols = [ 'green', 'red', 'cyan', 'magenta', 'yellow', 'black', 'white']
     colorvec=['blue']*len(train_data)#all cols to blue base is normal
