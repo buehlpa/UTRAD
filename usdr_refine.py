@@ -59,7 +59,7 @@ def main():
     
     SAVE_DIR= os.path.join(EXPERIMENT_PATH, args.model_result_dir, 'checkpoint_refined_usdr.pth') 
     
-    with open(os.path.join(EXPERIMENT_PATH,'args.log') ,"a") as args_log:
+    with open(os.path.join(EXPERIMENT_PATH,'args_refine.log') ,"a") as args_log:
         for k, v in sorted(vars(args).items()):
             print('%s: %s ' % (str(k), str(v)))
             args_log.write('%s: %s \n' % (str(k), str(v)))
@@ -100,7 +100,7 @@ def main():
     # sorted paths according to usdr scores
     sorted_paths_usdr=[train_paths[i] for i in usdr_df['idx']]
     sorted_idx=get_sorted_indexes(usdr_df['indicator'].tolist())
-    sorted_paths_score=[train_paths[i] for i in sorted_idx]
+    sorted_paths_score=[sorted_paths_usdr[i] for i in sorted_idx]
     sorted_paths_refined=sorted_paths_score[:int(len(sorted_idx)*(1-args.assumed_contamination_rate))]
 
     if args.data_set == 'mvtec':
@@ -110,7 +110,7 @@ def main():
             pickle.dump(sorted_paths_refined, file)
             print("saved refined paths")
         
-        print(sorted_paths_refined)
+        print(len(sorted_paths_refined))
         dataset_refined_usdr=ImageDataset_mvtec(args,DATA_PATH,mode='train',train_paths = sorted_paths_refined, test_paths = None)
         train_dataloader = DataLoader(dataset_refined_usdr, batch_size=2,shuffle=True,num_workers=8,drop_last=False)
 
@@ -178,7 +178,7 @@ def main():
         avg_loss_scale = 0
         total = 0
         transformer.train()
-        for i,(filename, batch) in enumerate(train_refined_simple):
+        for i,(filename, batch) in enumerate(train_dataloader):
             inputs = batch.to(device)
             outputs = []
             optimizer.zero_grad()
@@ -204,7 +204,7 @@ def main():
             total += inputs.size(0)
             print(("\r[Epoch%d/%d]-[Batch%d/%d]-[Loss:%f]-[Loss_scale:%f]" %
                                                             (epoch+1, args.epoch_num,
-                                                            i, len(train_refined_simple),
+                                                            i, len(train_dataloader),
                                                             avg_loss / total,
                                                             avg_loss_scale / total)))
 
@@ -218,7 +218,7 @@ def main():
                         'args':args,
                         'best_loss':best_loss
                 }
-            torch.save(state_dict, SAVE_DIR_REFINED)
+            torch.save(state_dict, SAVE_DIR)
             
         ## TODO add validation with data not from testset , loop 
         
@@ -286,7 +286,7 @@ def main():
         per_pixel_rocauc = roc_auc_score(gt_mask.flatten(), scores.flatten()) 
         print('pixel ROCAUC: %.3f' % (per_pixel_rocauc))    
         
-        with open(os.path.join(EXPERIMENT_PATH,'args.log') ,"a") as train_log:
+        with open(os.path.join(EXPERIMENT_PATH,'args_refine.log') ,"a") as train_log:
             train_log.write("\r[Epoch%d]-[Loss:%f]-[Loss_scale:%f]-[image_AUC:%f]-[pixel_AUC:%f]" %
                                                         (epoch+1, avg_loss / total, avg_loss_scale / total, img_roc_auc, per_pixel_rocauc))
 
