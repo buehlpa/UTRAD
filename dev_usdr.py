@@ -73,6 +73,7 @@ def main():
     # TODO does not really save paths   
     else:
         print("Not implemented for other datasets than MVTEC yet")
+        sys.exit()
     
 
     N_samples = len(train_data)
