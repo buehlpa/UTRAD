@@ -55,34 +55,32 @@ def main():
         test_paths = good_images_test + remaining_anomalies_test
         experiment_paths={'train':train_paths,'test':test_paths,'valid':valid_paths,'contamination_rate':args.contamination_rate,'seed':args.seed}
         
+        
+        experiment_path__=os.path.join(EXPERIMENT_PATH,"experiment_paths.json")
         if not args.development:
             os.makedirs(EXPERIMENT_PATH, exist_ok=True)
-            print(f"Saving experiment paths to {EXPERIMENT_PATH}")
-            with open(os.path.join(EXPERIMENT_PATH,"experiment_paths.json"), "w") as file:
+            print(f"Saving experiment paths to {experiment_path__}")
+            with open(experiment_path__, "w") as file:
                 json.dump(experiment_paths, file)
-                print("Experiment paths saved")
+            print(f"Experiment paths saved to {experiment_path__}")
+
                 
         DATA_PATH=os.path.join(args.data_root,args.data_category)
         # combine good and anomalies
         train_data=normal_images+sampled_anomalies_for_train
         labels_train=[0]*len(normal_images)+[1]*len(sampled_anomalies_for_train)
-    
-        
-        
+
     # TODO does not really save paths   
     else:
         print("Not implemented for other datasets than MVTEC yet")
-        sys.exit()
     
 
-    np.random.seed(args.seed)
     N_samples = len(train_data)
     idx = np.arange(N_samples)
     np.random.shuffle(idx)
-    sys.exit()
     # shuffle all the paths 
     
-    all_data_paths=[train_data[id]for id in idx]
+    all_data_paths=[train_data[id] for id in idx]
     ano_cols = [ 'green', 'red', 'cyan', 'magenta', 'yellow', 'black', 'white']
     colorvec=['blue']*len(train_data)#all cols to blue base is normal
 
