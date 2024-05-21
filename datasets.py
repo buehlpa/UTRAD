@@ -312,9 +312,9 @@ class JsonDataset(Dataset):
                                                     std=[0.229, 0.224, 0.225 ])
                                                 ])
         self.transform_test = transforms.Compose([transforms.Resize((self.crop_size, self.crop_size), Image.BICUBIC),
-                                         transforms.ToTensor(),
-                                         transforms.Normalize(mean=[0.485, 0.456, 0.406],
-                                                  std=[0.229, 0.224, 0.225])])
+                                            transforms.ToTensor(),
+                                            transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                                                std=[0.229, 0.224, 0.225])])
 
         self.files = []
         self.mode = mode
@@ -366,10 +366,10 @@ def get_dataloader(args):
             # sample from train paths if less trainming data should be used
             train_paths = normal_images + sampled_anomalies_for_train
             train_paths=random.sample(train_paths,int(len(train_paths)*args.data_ratio))
-                    
+            left_out_train_paths = list(set(normal_images + sampled_anomalies_for_train) - set(train_paths))
             valid_paths = validation_images + sampled_anomalies_for_val
             test_paths = good_images_test + remaining_anomalies_test
-            experiment_paths={'train':train_paths,'test':test_paths,'valid':valid_paths,'contamination_rate':args.contamination_rate,'seed':args.seed}
+            experiment_paths={'train':train_paths,'test':test_paths,'valid':valid_paths,'leftout_train_paths':left_out_train_paths,'contamination_rate':args.contamination_rate,'seed':args.seed}
             
             if not args.development:
                 os.makedirs(EXPERIMENT_LOG_PATH, exist_ok=True)
@@ -403,11 +403,13 @@ def get_dataloader(args):
         else:    
             normal_images, validation_images, sampled_anomalies_for_train, sampled_anomalies_for_val, good_images_test, remaining_anomalies_test = get_paths_beantec(args,verbose=True)    
             
+            # sample from train paths if less trainming data should be used
             train_paths = normal_images + sampled_anomalies_for_train
             train_paths=random.sample(train_paths,int(len(train_paths)*args.data_ratio))
+            left_out_train_paths = list(set(normal_images + sampled_anomalies_for_train) - set(train_paths))
             valid_paths = validation_images + sampled_anomalies_for_val
             test_paths = good_images_test + remaining_anomalies_test
-            experiment_paths={'train':train_paths,'test':test_paths,'valid':valid_paths,'contamination_rate':args.contamination_rate,'seed':args.seed}
+            experiment_paths={'train':train_paths,'test':test_paths,'valid':valid_paths,'leftout_train_paths':left_out_train_paths,'contamination_rate':args.contamination_rate,'seed':args.seed}
             
             if not args.development:
                 os.makedirs(EXPERIMENT_LOG_PATH, exist_ok=True)
@@ -424,11 +426,10 @@ def get_dataloader(args):
             valid_dataloader = None
         test_dataloader = DataLoader(ImageDataset_beantec(args,DATA_PATH,mode='test',train_paths = None,test_paths = experiment_paths['test']),
                                                         batch_size=args.batch_size,shuffle=False,num_workers=1,drop_last=False)
-        
-        
-    
+
     if args.mode == 'visa':
         pass        
+    
     if args.mode == 'utrad_mvtec':
         
         if args.contamination_rate != 0.0:

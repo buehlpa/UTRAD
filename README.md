@@ -26,7 +26,14 @@ python valid.py --exp_name Exp_15_02_24  --data_category grid  --mode mvtec --un
 
 python main.py --exp_name ExpNAME --data_category grid --mode mvtec --contamination_rate 0.1
 
+### only training data
 
+
+trainscores.py # needed for testing if trainings scores are larger for insample scores..
+
+# less data
+
+--data_rate
 
 # Run multiple scripts 
 
@@ -42,3 +49,10 @@ python main.py --exp_name Exp_17_02_24_baseline --data_category breakfast_box --
 
 dev_refinement_main
 
+
+
+# development of usdr
+
+dev_usdr
+
+# 

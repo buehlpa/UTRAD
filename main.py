@@ -60,7 +60,8 @@ def main():
         #optimizer.load_state_dict(checkpoint['optimizer'])
         best_loss = checkpoint['best_loss']
         del checkpoint
-
+        print("successfully loaded model")
+        
     backbone.eval()
     outputs = []
     # hook adds directly to a list calles outputs if a forward pass is done
@@ -220,3 +221,6 @@ def main():
 
 if __name__ == '__main__':
     main()
+    
+    
+    
