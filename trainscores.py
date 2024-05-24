@@ -34,15 +34,16 @@ def main():
 
             
     print('step')
-    if args.fixed_seed_bool:
-        torch.manual_seed(args.seed)
-        np.random.seed(args.seed)
-        torch.cuda.manual_seed(args.seed)
-    else:
-        torch.manual_seed(int(time.time()))
-        np.random.seed(int(time.time()))
-        torch.cuda.manual_seed(int(time.time()))
+    
+    if not args.fixed_seed_bool:
+        args.test_seed = int(time.time())
+        args.seed = int(time.time())
+
+    torch.manual_seed(args.seed)
+    np.random.seed(args.seed)
+    torch.cuda.manual_seed(args.seed)    
         
+
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     
     SAVE_DIR= os.path.join(EXPERIMENT_PATH, args.model_result_dir, 'checkpoint.pth')
@@ -56,7 +57,6 @@ def main():
     
     train_paths=experiment_paths['train']
     train_leftout_paths=experiment_paths['leftout_train_paths']
-    
     test_paths=experiment_paths['test']
     
     
@@ -65,10 +65,8 @@ def main():
         DATA_PATH=os.path.join(args.data_root,args.data_category)
         
         # allpaths
+        
         train_path_combined=train_paths+train_leftout_paths
-        
-        
-        
         dataset_train=ImageDataset_mvtec(args,DATA_PATH,mode='train',train_paths = train_path_combined, test_paths = None)
         train_dataloader = DataLoader(dataset_train, batch_size=2,shuffle=False,num_workers=8,drop_last=False)
 

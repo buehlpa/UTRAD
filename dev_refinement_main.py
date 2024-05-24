@@ -50,21 +50,25 @@ def main():
     
     EXPERIMENT_PATH = os.path.join(args.results_dir,args.data_set ,f'contamination_{int(args.contamination_rate*100)}',f'{args.exp_name}-{args.data_category}')
         
+
+    
+    if not args.fixed_seed_bool:
+        args.test_seed = int(time.time())
+        args.seed = int(time.time())
+
+    torch.manual_seed(args.seed)
+    np.random.seed(args.seed)
+    torch.cuda.manual_seed(args.seed)    
+        
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    
+
     with open(os.path.join(EXPERIMENT_PATH,'args.log') ,"a") as args_log:
         for k, v in sorted(vars(args).items()):
             print('%s: %s ' % (str(k), str(v)))
             args_log.write('%s: %s \n' % (str(k), str(v)))
     print('step')
-    if args.fixed_seed_bool:
-        torch.manual_seed(args.seed)
-        np.random.seed(args.seed)
-        torch.cuda.manual_seed(args.seed)
-    else:
-        torch.manual_seed(int(time.time()))
-        np.random.seed(int(time.time()))
-        torch.cuda.manual_seed(int(time.time()))
-        
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    
     
     SAVE_DIR= os.path.join(EXPERIMENT_PATH, args.model_result_dir, 'checkpoint.pth')
     

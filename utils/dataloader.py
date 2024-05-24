@@ -10,7 +10,6 @@ import warnings
 
 def stratified_sample(file_paths, class_list, total_samples,seed=123):
     
-    random.seed(seed)
     # Categorize file paths by class
     categorized_paths = defaultdict(list)
     for path in file_paths:
@@ -45,7 +44,6 @@ def count_files_by_class(file_paths, class_list):
             if class_name in os.path.split(path)[0].split(os.sep):
                 class_counts[class_name] += 1
                 break  # Stop checking other classes if the current one matches
-    
     return class_counts
 
 # mvtec
@@ -70,8 +68,6 @@ def get_paths_mvtec(args,verbose=True):
         
     anomaly_images_test=[item for item in file_path if "good" not in item]
     good_images_test=[item for item in file_path if "good" in item]
-    
-
     
     n_samples = int(len(normal_images)*args.contamination_rate)
     

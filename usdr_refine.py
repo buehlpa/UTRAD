@@ -59,6 +59,17 @@ def main():
     
     SAVE_DIR= os.path.join(EXPERIMENT_PATH, args.model_result_dir, 'checkpoint_refined_usdr.pth') 
     
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    
+    if not args.fixed_seed_bool:
+        args.test_seed = int(time.time())
+        args.seed = int(time.time())
+
+    torch.manual_seed(args.seed)
+    np.random.seed(args.seed)
+    torch.cuda.manual_seed(args.seed)  
+    
+    
     with open(os.path.join(EXPERIMENT_PATH,'args_refine.log') ,"a") as args_log:
         for k, v in sorted(vars(args).items()):
             print('%s: %s ' % (str(k), str(v)))
@@ -67,27 +78,10 @@ def main():
     print('step')
     
     # TODO read args and set random seed etc
-    
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-
-    
-    if args.fixed_seed_bool:
-        torch.manual_seed(args.seed)
-        np.random.seed(args.seed)
-        torch.cuda.manual_seed(args.seed)
-    else:
-        torch.manual_seed(int(time.time()))
-        np.random.seed(int(time.time()))
-        torch.cuda.manual_seed(int(time.time()))
-    
-
-
-
     usdr_df_path=get_matching_files(EXPERIMENT_PATH)
     usdr_df=pd.read_pickle(usdr_df_path)
 
     # TODO load saved idx and train model withz refined paths
-
     if os.path.exists(os.path.join(EXPERIMENT_PATH,"experiment_paths.json")) and not args.development:
         with open(os.path.join(EXPERIMENT_PATH,"experiment_paths.json"), "r") as file:
             experiment_paths = json.load(file)
@@ -136,9 +130,6 @@ def main():
         z = z.view(B, -1, H2 * W2)
         z = F.fold(z, kernel_size=s, output_size=(H1, W1), stride=s)
         return z    
-        
-        
-        
         
     start_epoch = 0
     transformer = Create_nets(args)

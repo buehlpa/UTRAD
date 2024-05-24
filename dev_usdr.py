@@ -29,14 +29,13 @@ import random
 def main():
     args = TrainOptions().parse()
 
-    if args.fixed_seed_bool:
-        torch.manual_seed(args.seed)
-        np.random.seed(args.seed)
-        torch.cuda.manual_seed(args.seed)
-    else:
-        torch.manual_seed(int(time.time()))
-        np.random.seed(int(time.time()))
-        torch.cuda.manual_seed(int(time.time()))
+    if not args.fixed_seed_bool:
+        args.test_seed = int(time.time())
+        args.seed = int(time.time())
+
+    torch.manual_seed(args.seed)
+    np.random.seed(args.seed)
+    torch.cuda.manual_seed(args.seed)    
     
     EXPERIMENT_PATH = os.path.join(args.results_dir,args.data_set ,f'contamination_{int(args.contamination_rate*100)}',f'{args.exp_name}-{args.data_category}')
     
@@ -48,6 +47,7 @@ def main():
     if args.data_set == 'mvtec':
         normal_images, validation_images, sampled_anomalies_for_train, sampled_anomalies_for_val, good_images_test, remaining_anomalies_test = get_paths_mvtec(args,verbose=True)
                 # sample from train paths if less trainming data should be used
+                
         train_paths = normal_images + sampled_anomalies_for_train
         train_paths=random.sample(train_paths,int(len(train_paths)*args.data_ratio))
                 
