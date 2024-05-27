@@ -34,6 +34,7 @@ def main():
     np.random.seed(args.seed)
     torch.cuda.manual_seed(args.seed)   
 
+
     with open(os.path.join(EXPERIMENT_PATH,'args.log') ,"a") as args_log:
         for k, v in sorted(vars(args).items()):
             print('%s: %s ' % (str(k), str(v)))

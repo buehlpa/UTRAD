@@ -35,7 +35,8 @@ def main():
 
     torch.manual_seed(args.seed)
     np.random.seed(args.seed)
-    torch.cuda.manual_seed(args.seed)    
+    torch.cuda.manual_seed(args.seed)
+    random.seed(args.seed)    
     
     EXPERIMENT_PATH = os.path.join(args.results_dir,args.data_set ,f'contamination_{int(args.contamination_rate*100)}',f'{args.exp_name}-{args.data_category}')
     
@@ -53,50 +54,46 @@ def main():
                 
         valid_paths = validation_images + sampled_anomalies_for_val
         test_paths = good_images_test + remaining_anomalies_test
-        experiment_paths={'train':train_paths,'test':test_paths,'valid':valid_paths,'contamination_rate':args.contamination_rate,'seed':args.seed}
         
-        
-        experiment_path__=os.path.join(EXPERIMENT_PATH,"experiment_paths.json")
-        if not args.development:
-            os.makedirs(EXPERIMENT_PATH, exist_ok=True)
-            print(f"Saving experiment paths to {experiment_path__}")
-            with open(experiment_path__, "w") as file:
-                json.dump(experiment_paths, file)
-            print(f"Experiment paths saved to {experiment_path__}")
-
-                
         DATA_PATH=os.path.join(args.data_root,args.data_category)
-        # combine good and anomalies
-        train_data=normal_images+sampled_anomalies_for_train
-        labels_train=[0]*len(normal_images)+[1]*len(sampled_anomalies_for_train)
 
-    # TODO does not really save paths   
+    
     else:
         print("Not implemented for other datasets than MVTEC yet")
         sys.exit()
     
-
-    N_samples = len(train_data)
+    N_samples=len(train_paths)
     idx = np.arange(N_samples)
     np.random.shuffle(idx)
-    # shuffle all the paths 
     
-    all_data_paths=[train_data[id] for id in idx]
+    all_train_paths=[train_paths[id] for id in idx]
+    
+    
+    experiment_paths={'train':all_train_paths,'test':test_paths,'valid':valid_paths,'contamination_rate':args.contamination_rate,'seed':args.seed}
+    experiment_path__=os.path.join(EXPERIMENT_PATH,"experiment_paths.json")
+    
+    if not args.development:
+        os.makedirs(EXPERIMENT_PATH, exist_ok=True)
+        print(f"Saving experiment paths to {experiment_path__}")
+        with open(experiment_path__, "w") as file:
+            json.dump(experiment_paths, file)
+        print(f"Experiment paths saved to {experiment_path__}")
+    
+    
     ano_cols = [ 'green', 'red', 'cyan', 'magenta', 'yellow', 'black', 'white']
-    colorvec=['blue']*len(train_data)#all cols to blue base is normal
-
+    colorvec=['blue']*N_samples#all cols to blue base is normal
     anocat=args.dataset_parameters['anomaly_categories'][args.data_category]
 
     for i,cat in enumerate(anocat):
-        for id_, (col,path) in enumerate(zip(colorvec,all_data_paths)):
+        for id_, (col,path) in enumerate(zip(colorvec,all_train_paths)):
             if cat in path:
                 colorvec[id_]=ano_cols[i]
 
 
     # VISUALIZATION WITH 2 HISTOGRAMS PER SPLIT (TRAIN, TEST) NORMAL/ABNORMAL IN SPLIT OUT OF SPLIT
     ##USDR
-    stride = 35
-    window_size = 200
+    stride = 42
+    window_size = 182
     # Create train sets
     shifts = np.floor(N_samples / stride)
     train_sets = int(shifts)
@@ -105,9 +102,9 @@ def main():
     for i in range(train_sets):
         train_ind_ls.append(idx[np.arange(i * stride, i * stride + window_size) % N_samples])
     #save split plot  
-    plot_splits(train_ind_ls, idx, all_data_paths, train_sets, anocat, args.data_category, stride, window_size,splittype='USDR',EXPERIMENT_PATH=EXPERIMENT_PATH)
+    plot_splits(train_ind_ls, idx, all_train_paths, train_sets, anocat, args.data_category, stride, window_size,splittype='USDR',EXPERIMENT_PATH=EXPERIMENT_PATH)
 
-    all_data_set=ImageDataset_mvtec(args,DATA_PATH,mode='train',train_paths = all_data_paths,test_paths = None)
+    all_data_set=ImageDataset_mvtec(args,DATA_PATH,mode='train',train_paths = all_train_paths,test_paths = None)
     all_dataloader = DataLoader(all_data_set,batch_size=args.batch_size,shuffle=False,num_workers=args.n_cpu,drop_last=False)
     recon_error_ls = []
 
@@ -152,18 +149,11 @@ def main():
         if not os.path.exists(os.path.join(EXPERIMENT_PATH, model_result_m)):
             os.makedirs(os.path.join(EXPERIMENT_PATH, model_result_m))
 
-        paths_j = [train_data[idx] for idx in train_ind_ls[j]]
+        paths_j = [all_train_paths[id] for id in train_ind_ls[j]]
         dataset_j=ImageDataset_mvtec(args,DATA_PATH,mode='train',train_paths = paths_j, test_paths = None)
         train_j_dataloader = DataLoader(dataset_j, batch_size=2,shuffle=True,num_workers=8,drop_last=False)
-        
-        # with open(os.path.join(EXPERIMENT_PATH,model_result_m,"experiment_paths.json"), "w") as file:
-        #         json.dump(paths_j, file)
-        
         pathlist.append(paths_j)
-        #save paths on 
         
-        #train_dataloader, valid_loader ,test_dataloader = get_dataloader(args)
-
         ## Train model
         
         # #model....
@@ -253,8 +243,6 @@ def main():
                 score = F.interpolate(score, (inputs.size(2),inputs.size(3)), mode='bilinear', align_corners=False)
                 heatmap = score.repeat(1,3,1,1)
                 score_map.append(score.cpu())
-
-        
         scores = torch.cat(score_map,dim=0)
         
         # max_score = scores.max()
@@ -267,10 +255,10 @@ def main():
 
     scores = np.vstack(recon_error_ls)
 
-    with open( os.path.join(EXPERIMENT_PATH,'allscores.pkl'), 'wb') as file:
+    with open( os.path.join(EXPERIMENT_PATH,'allscores_utrad.pkl'), 'wb') as file:
         pickle.dump(scores, file)
 
-    with open( os.path.join(EXPERIMENT_PATH,'allpaths.pkl'), 'wb') as file:
+    with open( os.path.join(EXPERIMENT_PATH,'all_train_paths_j.pkl'), 'wb') as file:
         pickle.dump(pathlist, file)
         
     for i in range(train_sets):
@@ -285,7 +273,6 @@ def main():
         
     scores_infer = scores.copy()
     scores_train = scores.copy()
-
     scores_infer[scores_bool] = np.nan
     scores_train[~scores_bool] = np.nan
 
@@ -298,9 +285,6 @@ def main():
 
 
     indicator = np.abs(scores_test_mean - scores_train_mean)
-
-    
-
     resdict={'indicator':indicator,'idx':idx,'scores_test_mean':scores_test_mean,'scores_test_std':scores_test_std,'scores_train_mean':scores_train_mean,'scores_train_std':scores_train_std}
     pd.DataFrame(resdict).to_pickle(os.path.join(EXPERIMENT_PATH,f'USDR_window:{window_size}_stride:{stride}.pkl'))
     
