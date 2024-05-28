@@ -24,11 +24,14 @@ def main():
     args = TrainOptions().parse()
     
     EXPERIMENT_PATH = os.path.join(args.results_dir,args.data_set ,f'contamination_{int(args.contamination_rate*100)}',f'{args.exp_name}-{args.data_category}')
-        
+    
+    
 
     if not args.fixed_seed_bool:
-        args.test_seed = int(time.time())
-        args.seed = int(time.time())
+        args.test_seed = int(time.time()/2)
+        args.seed = int(time.time()/3)
+
+    print(f'args.seed {args.seed} {args.fixed_seed_bool}')
 
     torch.manual_seed(args.seed)
     np.random.seed(args.seed)

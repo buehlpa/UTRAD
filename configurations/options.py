@@ -1,3 +1,4 @@
+
 import argparse
 import os
 import torch
@@ -8,12 +9,22 @@ class TrainOptions():
         self.parser = argparse.ArgumentParser()
         self.initialized = False
 
+    def str2bool(self,v):
+        if isinstance(v, bool):
+            return v
+        if v.lower() in ('yes', 'true', 't', 'y', '1'):
+            return True
+        elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+            return False
+        else:
+            raise argparse.ArgumentTypeError('Boolean value expected.')
+        
     def initialize(self):
         self.parser.add_argument('--exp_name',       type=str, default="Exp1", help='the name of the experiment')
         self.parser.add_argument('--epoch_start',    type=int, default=0 , help='epoch to start training from')
         self.parser.add_argument('--epoch_num',      type=int, default=150, help='number of epochs of training')
         self.parser.add_argument('--factor',         type=int, default= 1, help='not implemented yet')
-        self.parser.add_argument('--fixed_seed_bool',type=bool, default=True, help='whether to use fixed seed, if False, seed is set to time.time()')
+        self.parser.add_argument('--fixed_seed_bool',type=self.str2bool, default=True, help='whether to use fixed seed, if False, seed is set to time.time()')
         self.parser.add_argument('--seed',           type=int, default=233, help='random seed')
         self.parser.add_argument('--test_seed',      type=int, default=400, help='seed for sampling from testset anos')
         self.parser.add_argument('--num_row',        type=int, default=4, help='number of image in a rows for display')
