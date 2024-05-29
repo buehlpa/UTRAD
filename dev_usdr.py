@@ -80,6 +80,9 @@ def main():
         print(f"Experiment paths saved to {experiment_path__}")
     
     
+    
+    
+    # VISUALIZATION WITH 2 HISTOGRAMS PER SPLIT (TRAIN, TEST) NORMAL/ABNORMAL IN SPLIT OUT OF SPLIT
     ano_cols = [ 'green', 'red', 'cyan', 'magenta', 'yellow', 'black', 'white']
     colorvec=['blue']*N_samples#all cols to blue base is normal
     anocat=args.dataset_parameters['anomaly_categories'][args.data_category]
@@ -88,12 +91,10 @@ def main():
         for id_, (col,path) in enumerate(zip(colorvec,all_train_paths)):
             if cat in path:
                 colorvec[id_]=ano_cols[i]
-
-
-    # VISUALIZATION WITH 2 HISTOGRAMS PER SPLIT (TRAIN, TEST) NORMAL/ABNORMAL IN SPLIT OUT OF SPLIT
+    
     ##USDR
-    stride = 42
-    window_size = 182
+    stride = 15
+    window_size = 250
     # Create train sets
     shifts = np.floor(N_samples / stride)
     train_sets = int(shifts)
@@ -164,11 +165,13 @@ def main():
         optimizer = torch.optim.Adam( transformer.parameters(), lr=args.lr, betas=(args.b1, args.b2))
         best_loss = 1e10
         
+        
         #### TRAIN MODEL
         for epoch in range(start_epoch, args.epoch_num):
             avg_loss = 0
             avg_loss_scale = 0
             total = 0
+            
             transformer.train()
             for i,(filename, batch) in enumerate(train_j_dataloader):
                 
@@ -219,8 +222,7 @@ def main():
                 _ = backbone(inputs)
                 outputs = embedding_concat(embedding_concat(outputs[0],outputs[1]),outputs[2])
                 recon, std = transformer(outputs)
-                
-                
+
                 batch_size, channels, width, height = recon.size()
                 dist = torch.norm(recon - outputs, p = 2, dim = 1, keepdim = True).div(std.abs())
                 dist = dist.view(batch_size, 1, width, height)
@@ -243,6 +245,7 @@ def main():
                 score = F.interpolate(score, (inputs.size(2),inputs.size(3)), mode='bilinear', align_corners=False)
                 heatmap = score.repeat(1,3,1,1)
                 score_map.append(score.cpu())
+                
         scores = torch.cat(score_map,dim=0)
         
         # max_score = scores.max()
