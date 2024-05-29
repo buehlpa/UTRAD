@@ -26,6 +26,9 @@ import copy
 from configurations.options import TrainOptions
 import random
 
+
+
+
 def main():
     args = TrainOptions().parse()
 
@@ -247,15 +250,14 @@ def main():
                 score_map.append(score.cpu())
                 
         scores = torch.cat(score_map,dim=0)
-        
+        img_scores = scores.view(scores.size(0),-1).max(dim=1)[0]
+        recon_error_ls.append(img_scores)        
         # max_score = scores.max()
         # min_score = scores.min()
         # scores = (scores - min_score) / (max_score - min_score)
         
-        img_scores = scores.view(scores.size(0),-1).max(dim=1)[0]
-        recon_error_ls.append(img_scores)
-            
 
+            
     scores = np.vstack(recon_error_ls)
 
     with open( os.path.join(EXPERIMENT_PATH,'allscores_utrad.pkl'), 'wb') as file:

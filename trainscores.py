@@ -33,11 +33,6 @@ import json
 def main():
     args = TrainOptions().parse()
     
-    EXPERIMENT_PATH = os.path.join(args.results_dir,args.data_set ,f'contamination_{int(args.contamination_rate*100)}',f'{args.exp_name}-{args.data_category}')
-
-            
-    print('step')
-    
     if not args.fixed_seed_bool:
         args.test_seed = int(time.time())
         args.seed = int(time.time())
@@ -46,11 +41,13 @@ def main():
     np.random.seed(args.seed)
     torch.cuda.manual_seed(args.seed)
         
+    EXPERIMENT_PATH = os.path.join(args.results_dir,args.data_set ,f'contamination_{int(args.contamination_rate*100)}',f'{args.exp_name}-{args.data_category}')
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     
     SAVE_DIR= os.path.join(EXPERIMENT_PATH, args.model_result_dir, 'checkpoint.pth')
     
+    print('step')
     
     if os.path.exists(os.path.join(EXPERIMENT_PATH,"experiment_paths.json")) and not args.development:
         with open(os.path.join(EXPERIMENT_PATH,"experiment_paths.json"), "r") as file:
@@ -75,7 +72,8 @@ def main():
 
         # load experiment dataset pahts
         _, valid_loader ,test_dataloader = get_dataloader(args)
-    
+        
+    #Todo add trainmode
     
     else:
         print("Not implemented for other datasets than MVTEC yet")
@@ -138,7 +136,6 @@ def main():
             _ = backbone(inputs)
             outputs = embedding_concat(embedding_concat(outputs[0],outputs[1]),outputs[2])
             recon, std = transformer(outputs)
-            
             
             batch_size, channels, width, height = recon.size()
             dist = torch.norm(recon - outputs, p = 2, dim = 1, keepdim = True).div(std.abs())
