@@ -180,7 +180,43 @@ def get_paths_beantec(args,verbose=True):
     
     return normal_images, validation_images, sampled_anomalies_for_train, sampled_anomalies_for_val, good_images_test, remaining_anomalies_test
 
+# read argslog
 
-## splits
+def open_args_log(log_file_path):
+    # Initialize an empty dictionary to store the parameters
+    params = {}
+    # Read the log file
+    with open(log_file_path, "r") as file:
+        for line in file:
+            if line.startswith("["):
+                # Stop reading when the log part starts
+                break
+            
+            # Process only lines containing ': '
+            if ": " in line:
+                # Split the line into key and value
+                key, value = line.split(": ", 1)
+                
+                # Clean up the key and value
+                key = key.strip()
+                value = value.strip()
+                
+                # Convert certain values to their respective data types
+                if value.lower() == "true":
+                    value = True
+                elif value.lower() == "false":
+                    value = False
+                elif value.replace('.', '', 1).isdigit():
+                    value = float(value) if '.' in value else int(value)
+                elif value.startswith("{") and value.endswith("}"):
+                    value = eval(value)  # Use eval to convert dictionary strings to actual dictionaries
+                
+                # Add the key-value pair to the dictionary if the key is not already present
+                if key not in params:
+                    params[key] = value
+    return params
 
-
+# usage!
+# params=open_args_log(log_file_path)
+# for key in params:
+#     setattr(args, key, params[key])
