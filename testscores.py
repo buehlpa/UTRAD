@@ -79,7 +79,6 @@ def main():
         print("Not implemented for other datasets than MVTEC yet")
         sys.exit()
     
-
     
     start_epoch = 0
     transformer = Create_nets(args)
@@ -97,7 +96,6 @@ def main():
     backbone.layer1[-1].register_forward_hook(hook)
     backbone.layer2[-1].register_forward_hook(hook)
     backbone.layer3[-1].register_forward_hook(hook)
-    
     
     
     if os.path.exists(SAVE_DIR):

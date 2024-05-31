@@ -320,3 +320,44 @@ def plot_splits(train_ind_ls, idx, train_datashuffled, n_train_sets, anocats, ca
         plt.close()
     else:
         plt.show()
+        
+        
+def plot_multiple_training_scores(filepaths, title='Screw 10 Percent contam', log_scale=True):
+    dataframes = []
+    for filepath in filepaths:
+        resdict = read_training_scores(filepath)
+        df = pd.DataFrame(resdict)
+        if log_scale:
+            df['Loss_scale'] = np.log(df['Loss_scale'])
+        dataframes.append(df)
+
+    fig, axs = plt.subplots(4, 1, figsize=(10, 12), sharex=True)
+    legend_labels = []
+    for idx, df in enumerate(dataframes):
+        for i, column in enumerate(df.columns):
+            axs[i].plot(df.index, df[column], linestyle='-', label=f'Run {idx + 1}')
+            legend_labels.append(f'Run {idx + 1}')
+
+    for i, column in enumerate(dataframes[0].columns):
+        axs[i].set_xlabel('Epoch')
+        axs[i].set_ylabel(column)
+        axs[i].set_title(f'{column}')
+        axs[i].grid(True)
+        
+    handles, labels = axs[0].get_legend_handles_labels()
+    fig.legend(handles, labels, loc='lower center', ncol=len(dataframes), fontsize='small')
+
+    fig.suptitle(title, fontsize=16)
+    plt.tight_layout(rect=[0, 0.05, 1, 0.95])
+    plt.show()
+    
+    
+def last_rows_metric(filepaths):
+    """gets reads each df in filepaths list and conacatenases the last row into a new df"""
+    dfs=[]
+    for path in filepaths:
+        dfs.append(pd.DataFrame(read_training_scores(path)))
+    last_rows = [df.iloc[-1] for df in dfs]
+    last_rows_df = pd.DataFrame(last_rows)
+    last_rows_df.reset_index(drop=True, inplace=True)
+    return last_rows_df
