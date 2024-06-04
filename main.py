@@ -26,11 +26,19 @@ def main():
     EXPERIMENT_PATH = os.path.join(args.results_dir,args.data_set ,f'contamination_{int(args.contamination_rate*100)}',f'{args.exp_name}-{args.data_category}')
     
     
-
+    # CONTROOL BOTH
     if not args.fixed_seed_bool:
         args.test_seed = int(time.time()/2)
         args.seed = int(time.time()/3)
-
+    
+    # CONTROL INDICIAUL SEED , TEST_SEED = HOW TO  ADD DATA TO THE TRAINING SET IN CASE OF CONTAMINATION    
+    if not args.fixed_seed_TEST_bool:
+        args.test_seed = int(time.time()/2)
+        
+    if not args.fixed_seed_TRAIN_bool:        
+         args.seed = int(time.time()/3)
+    
+    
     print(f'args.seed {args.seed} {args.fixed_seed_bool}')
 
     torch.manual_seed(args.seed)
