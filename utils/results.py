@@ -148,7 +148,22 @@ def plot_vals_per_category_and_contamination(RESPATH,dataset,experiment,category
     plt.plot(contam_list,metric_list)
     plt.xlabel('Contamination in %' ),plt.ylabel(f'{metric}'),plt.title(f'{experiment}  ,{category}'),plt.show()
     
+def extract_auc_values(log_file_path):
     
+    """extracts the image and pixel AUC values from the log file"""
+    auc_values = {}
+    
+    with open(log_file_path, 'r') as file:
+        for line in file:
+            if "image ROCAUC" in line:
+                image_auc_match = re.search(r'image ROCAUC:\s*([0-9.]+)', line)
+                if image_auc_match:
+                    auc_values['image_AUC'] = [float(image_auc_match.group(1))]
+            elif "pixel ROCAUC" in line:
+                pixel_auc_match = re.search(r'pixel ROCAUC:\s*([0-9.]+)', line)
+                if pixel_auc_match:
+                    auc_values['pixel_AUC'] = [float(pixel_auc_match.group(1))]
+    return auc_values  
     
 def plot_vals_per_category_and_contamination_multirun(RESPATH,dataset,experiment,category,contam_dir_list=["contamination_0","contamination_2","contamination_4","contamination_6","contamination_8","contamination_10"],metric="image ROCAUC"):
     """
