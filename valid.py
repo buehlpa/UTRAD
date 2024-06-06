@@ -200,7 +200,7 @@ def main():
             print('pixel ROCAUC: %.3f' % (per_pixel_rocauc))
             
 
-             
+            
             if args.unalign_test:
                 with open(os.path.join(EXPERIMENT_PATH,'validation_result.log') ,"a") as log:
                     log.write('epochs:%ss\n' % (str(start_epoch)))
