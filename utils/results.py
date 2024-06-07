@@ -150,7 +150,7 @@ def plot_vals_per_category_and_contamination(RESPATH,dataset,experiment,category
     
 def extract_auc_values(log_file_path):
     
-    """extracts the image and pixel AUC values from the log file"""
+    """extracts the image and pixel AUC values from the val log file"""
     auc_values = {}
     
     with open(log_file_path, 'r') as file:
