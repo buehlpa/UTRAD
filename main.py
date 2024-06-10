@@ -36,7 +36,7 @@ def main():
         args.test_seed = int(time.time()/2)
         
     if not args.fixed_seed_TRAIN_bool:        
-         args.seed = int(time.time()/3)
+        args.seed = int(time.time()/3)
     
     
     print(f'args.seed {args.seed} {args.fixed_seed_bool}')
