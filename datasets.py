@@ -385,10 +385,7 @@ def get_dataloader(args):
                                                 batch_size=args.batch_size,shuffle=False,num_workers=1,drop_last=False)
         else:
             valid_dataloader = None
-            
-        test_dataloader = DataLoader(ImageDataset_mvtec(args,DATA_PATH,mode='test',train_paths = None,test_paths = experiment_paths['test']),
-                                                        batch_size=args.batch_size,shuffle=False,num_workers=1,drop_last=False)
-    
+        test_dataloader = DataLoader(ImageDataset_mvtec(args,DATA_PATH,mode='test',train_paths = None,test_paths = experiment_paths['test']),batch_size=args.batch_size,shuffle=False,num_workers=1,drop_last=False)
 
     if args.mode == 'beantec':
         

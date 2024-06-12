@@ -49,6 +49,9 @@ class TrainOptions():
         self.parser.add_argument('--assumed_contamination_rate', type=float, default=0.0, help='How much you assume that the training dataset is contaminated')
         self.parser.add_argument('--mode', type=str, default='utrad_mvtec', help='Which dataloader should be used: one of utrad_mvtec,mvtec, mvtec_loco, beantec,visa')
         self.parser.add_argument('--development', type=bool, default=False, help='used for development mode , some paths are not saved ')
+        self.parser.add_argument('--stride', type=int, default=15, help='stride for usdr refinement')
+        self.parser.add_argument('--window_size', type=int, default=250, help='window_size for usdr refinetment ')
+        
 
 
 ## TODO mode dataset  are equvivalent, remove trhough whole dataset

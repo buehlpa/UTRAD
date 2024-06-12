@@ -96,17 +96,22 @@ def main():
                 colorvec[id_]=ano_cols[i]
     
     ##USDR
-    stride = 15
-    window_size = 250
+    
+    
+    # args.stride = 15
+    # args.window_size = 250
+    
+    
+    
     # Create train sets
-    shifts = np.floor(N_samples / stride)
+    shifts = np.floor(N_samples / args.stride)
     train_sets = int(shifts)
 
     train_ind_ls = []
     for i in range(train_sets):
-        train_ind_ls.append(idx[np.arange(i * stride, i * stride + window_size) % N_samples])
+        train_ind_ls.append(idx[np.arange(i * args.stride, i * args.stride + args.window_size) % N_samples])
     #save split plot  
-    plot_splits(train_ind_ls, idx, all_train_paths, train_sets, anocat, args.data_category, stride, window_size,splittype='USDR',EXPERIMENT_PATH=EXPERIMENT_PATH)
+    plot_splits(train_ind_ls, idx, all_train_paths, train_sets, anocat, args.data_category, args.stride, args.window_size,splittype='USDR',EXPERIMENT_PATH=EXPERIMENT_PATH)
 
     all_data_set=ImageDataset_mvtec(args,DATA_PATH,mode='train',train_paths = all_train_paths,test_paths = None)
     all_dataloader = DataLoader(all_data_set,batch_size=args.batch_size,shuffle=False,num_workers=args.n_cpu,drop_last=False)
@@ -291,7 +296,7 @@ def main():
 
     indicator = np.abs(scores_test_mean - scores_train_mean)
     resdict={'indicator':indicator,'idx':idx,'scores_test_mean':scores_test_mean,'scores_test_std':scores_test_std,'scores_train_mean':scores_train_mean,'scores_train_std':scores_train_std}
-    pd.DataFrame(resdict).to_pickle(os.path.join(EXPERIMENT_PATH,f'USDR_window:{window_size}_stride:{stride}.pkl'))
+    pd.DataFrame(resdict).to_pickle(os.path.join(EXPERIMENT_PATH,f'USDR_window:{args.window_size}_stride:{args.stride}.pkl'))
     
 if __name__ == '__main__':
     main()
