@@ -376,3 +376,57 @@ def last_rows_metric(filepaths):
     last_rows_df = pd.DataFrame(last_rows)
     last_rows_df.reset_index(drop=True, inplace=True)
     return last_rows_df
+
+def get_anomaly_dictionaries(category):
+    # get markes dicts for plotting anomalies
+    base_marker = {'good': '.'}
+    base_color = {'good': 'blue'}
+    base_color_clean = {'good': 'skyblue'}
+
+    category_anomalies = anomaly_categories.get(category, [])
+    
+    marker_options = ['x', '^', 's', 'p', 'D', 'v', '<', '>', 'h', 'H', '*', '+', 'X', 'P', 'd']
+    color_options = ['green', 'red', 'dodgerblue', 'purple', 'olive', 'brown', 'black', 'darkgreen',
+                     'darkred', 'darkblue', 'darkcyan', 'gold', 'pink', 'salmon', 'seagreen', 'teal',
+                     'navy', 'silver', 'maroon', 'gray', 'darkviolet', 'lightcoral', 'cyan', 'magenta',
+                     'yellow', 'green', 'crimson', 'lavender', 'tomato', 'fuchsia', 'khaki', 'orange',
+                     'peru']
+    color_clean_options = ['lightgreen', 'orchid', 'aquamarine', 'mediumpurple', 'lime', 'lightsalmon', 'lightskyblue', 
+                           'lightcoral', 'lightsteelblue', 'lightseagreen', 'lightcyan', 'lightgoldenrodyellow', 
+                           'lightpink', 'lightslategray', 'lightgreen', 'lightblue', 'lightyellow', 'lightgray', 
+                           'lightblue', 'lightgreen', 'lightpurple', 'lightcoral', 'lightcyan', 'lightmagenta', 
+                           'lightyellow', 'lightgreen', 'lightcrimson', 'lightlavender', 'lighttomato', 'lightfuchsia', 
+                           'lightkhaki', 'lightorange', 'lightperu']
+    
+    marker_dict = base_marker.copy()
+    color_dict = base_color.copy()
+    color_clean_dict = base_color_clean.copy()
+    
+    for i, anomaly in enumerate(category_anomalies):
+        marker = marker_options[i % len(marker_options)]
+        color = color_options[i % len(color_options)]
+        color_clean = color_clean_options[i % len(color_clean_options)]
+        
+        marker_dict[anomaly] = marker
+        color_dict[anomaly] = color
+        color_clean_dict[anomaly] = color_clean
+        
+    return marker_dict, color_dict, color_clean_dict
+
+anomaly_categories = {
+    "bottle": ["broken_large", "broken_small", "contamination"],
+    "cable": ["bent_wire", "cable_swap", "combined", "cut_inner_insulation", "cut_outer_insulation", "missing_cable", "missing_wire", "poke_insulation"],
+    "capsule": ["crack", "faulty_imprint", "poke", "scratch","squeeze"],
+    "carpet": ["color", "cut", "hole", "metal_contamination", "thread"],
+    "grid": ["bent", "broken", "glue", "metal_contamination", "thread"],
+    "hazelnut": ["crack", "cut", "hole", "print"],
+    "leather": ["color", "cut", "fold", "glue", "poke"],
+    "metal_nut": ["bent", "color", "flip", "scratch"],
+    "pill": ["color", "combined","contamination", "crack", "faulty_imprint", "pill_type","scratch"],
+    "screw": ["manipulated_front", "scratch_head", "scratch_neck","thread_side", "thread_top"],
+    "tile": ["crack", "glue_strip", "gray_stroke", "oil","rough"],
+    "toothbrush": ["defective"],
+    "transistor": ["bent_lead", "cut_lead", "damaged_case", "misplaced"],
+    "wood": ["color", "combined", "hole", "liquid", "scratch"],
+    "zipper": ["broken_teeth", "combined","fabric_border", "fabric_interior","split_teeth","rough", "squeezed_teeth"]
+}
