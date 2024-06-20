@@ -12,7 +12,7 @@ from models import Create_nets
 from datasets import get_dataloader
 from configurations.options import TrainOptions
 from utils.dataloader import open_args_log
-from datasets import ImageDataset_mvtec
+from datasets import *
 from torch.utils.data import DataLoader
 import pickle
 
@@ -95,24 +95,65 @@ def main():
     
     
     if args.data_set == 'mvtec':
-
         DATA_PATH=os.path.join(args.data_root,args.data_category)
         
         # allpaths
         dataset_clean_train=ImageDataset_mvtec(args,DATA_PATH,mode='train',train_paths = experiment_paths['clean_train'], test_paths = None)
         clean_traindataloader = DataLoader(dataset_clean_train, batch_size=2,shuffle=False,num_workers=8,drop_last=False)
 
-        
         # allpaths
         dataset_clean_test=ImageDataset_mvtec(args,DATA_PATH,mode='train',train_paths = experiment_paths['test'], test_paths = None)
         clean_testdataloader = DataLoader(dataset_clean_test, batch_size=2,shuffle=False,num_workers=8,drop_last=False)
 
-
         # load experiment dataset pahts
         _ , _ , test_dataloader = get_dataloader(args)
+        
+        
+        
+    if args.data_set == 'mvtec_loco':
+        DATA_PATH=os.path.join(args.data_root,args.data_category)
+        
+        # allpaths
+        dataset_clean_train=ImageDataset_mvtec(args,DATA_PATH,mode='train',train_paths = experiment_paths['clean_train'], test_paths = None)
+        clean_traindataloader = DataLoader(dataset_clean_train, batch_size=2,shuffle=False,num_workers=8,drop_last=False)
+
+        # allpaths
+        dataset_clean_test=ImageDataset_mvtec(args,DATA_PATH,mode='train',train_paths = experiment_paths['test'], test_paths = None)
+        clean_testdataloader = DataLoader(dataset_clean_test, batch_size=2,shuffle=False,num_workers=8,drop_last=False)
+
+        # load experiment dataset pahts
+        _ , _ , test_dataloader = get_dataloader(args)   
+    
+    if args.data_set == 'beantec':
+        DATA_PATH=os.path.join(args.data_root,args.data_category)
+        
+        # allpaths
+        dataset_clean_train=ImageDataset_beantec(args,DATA_PATH,mode='train',train_paths = experiment_paths['clean_train'], test_paths = None)
+        clean_traindataloader = DataLoader(dataset_clean_train, batch_size=2,shuffle=False,num_workers=8,drop_last=False)
+
+        # allpaths
+        dataset_clean_test=ImageDataset_beantec(args,DATA_PATH,mode='train',train_paths = experiment_paths['test'], test_paths = None)
+        clean_testdataloader = DataLoader(dataset_clean_test, batch_size=2,shuffle=False,num_workers=8,drop_last=False)
+
+        # load experiment dataset pahts
+        _ , _ , test_dataloader = get_dataloader(args)   
+
+    if args.data_set == 'visa':
+        DATA_PATH=os.path.join(args.data_root,args.data_category)
+        
+        # allpaths
+        dataset_clean_train=ImageDataset_visa(args,DATA_PATH,mode='train',train_paths = experiment_paths['clean_train'], test_paths = None)
+        clean_traindataloader = DataLoader(dataset_clean_train, batch_size=2,shuffle=False,num_workers=8,drop_last=False)
+
+        # allpaths
+        dataset_clean_test=ImageDataset_visa(args,DATA_PATH,mode='train',train_paths = experiment_paths['test'], test_paths = None)
+        clean_testdataloader = DataLoader(dataset_clean_test, batch_size=2,shuffle=False,num_workers=8,drop_last=False)
+
+        # load experiment dataset pahts
+        _ , _ , test_dataloader = get_dataloader(args)   
     
     else:
-        print("Not implemented for other datasets than MVTEC yet")
+        print("Not implemented for other datasets")
         sys.exit()
     
     #train_dataloader, valid_loader ,test_dataloader = get_dataloader(args)
@@ -190,7 +231,7 @@ def main():
         score_map = []
         gt_list = []
         gt_mask_list = []
-        for i,(name ,batch, ground_truth, gt) in enumerate(test_dataloader):
+        for i,(name ,batch, ground_truth, gt) in enumerate(test_dataloader): # this is already the reduced testset
             with torch.no_grad():
                 inputs = batch.to(device)
                 ground_truth = ground_truth.to(device)

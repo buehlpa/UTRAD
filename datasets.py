@@ -12,7 +12,7 @@ from torch.utils.data import DataLoader
 import torch.nn.functional as F
 import torchvision.transforms.functional as TF
 
-from utils.dataloader import get_paths_mvtec , get_paths_mvtec_loco , get_paths_beantec
+from utils.dataloader import get_paths_mvtec , get_paths_mvtec_loco , get_paths_beantec , get_paths_visa
 
 
 
@@ -214,7 +214,98 @@ class ImageDataset_beantec(Dataset):
             
     def __len__(self):
         return len(self.files)   
+
+class ImageDataset_visa(Dataset):
+    def __init__(self, args, root, transforms_=None, mode='train', train_paths=None, test_paths=None):
+        
+        self.img_size = 280 * args.factor
+        self.crop_size = 256 * args.factor
+        self.args = args
+        self.mode = mode
+        if train_paths is None and test_paths is None:
+            raise ValueError("either test or train paths must be provided depending on the mode")
+        
+        self.train_paths = train_paths
+        self.test_paths = test_paths
+        
+        self.transform_train = transforms.Compose([ transforms.Resize((self.crop_size, self.crop_size), Image.BICUBIC),
+                                                transforms.Pad(int(self.crop_size/10),fill=0,padding_mode='constant'),
+                                                transforms.RandomRotation(10),
+                                                transforms.RandomCrop((self.crop_size, self.crop_size)),
+                                                transforms.ToTensor(),
+                                                transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                                                    std=[0.229, 0.224, 0.225 ]) ])
+        
+        self.resize_transform_visa = transforms.Resize((self.crop_size, self.crop_size), Image.BICUBIC)
+
+        if mode == 'train':
+            self.files = train_paths
+        elif mode == 'test':
+            self.files = test_paths
+            
+    def _align_transform(self, img, mask):
+        #resize to 224
+        img = TF.resize(img, self.crop_size, Image.BICUBIC)
+        mask = TF.resize(mask, self.crop_size, Image.NEAREST)
+        #toTensor
+        img = TF.to_tensor(img)
+        mask = TF.to_tensor(mask)
+        #normalize
+        img = TF.normalize(img, mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225 ])
+        return img, mask
     
+    def _unalign_transform(self, img, mask):
+        #resize to 256
+        img = TF.resize(img, self.img_size, Image.BICUBIC)
+        mask = TF.resize(mask, self.img_size, Image.NEAREST)
+        #random rotation
+        angle = transforms.RandomRotation.get_params([-10, 10])
+        img = TF.rotate(img, angle, fill=(0,))
+        mask = TF.rotate(mask, angle, fill=(0,))
+        #random crop
+        i, j, h, w = transforms.RandomCrop.get_params(img, output_size=(self.crop_size, self.crop_size))
+        img = TF.crop(img, i, j, h, w)
+        mask = TF.crop(mask, i, j, h, w)
+        #toTensor
+        img = TF.to_tensor(img)
+        mask = TF.to_tensor(mask)
+        #normalize
+        img = TF.normalize(img, mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225 ])
+        return img, mask
+
+    def __getitem__(self, index):
+        filename = self.files[index]
+        img = Image.open(filename)
+        img = img.convert('RGB')
+        img = self.resize_transform_visa(img)
+
+        if self.mode == 'train':
+            img = self.transform_train(img)            
+            return filename, img
+        
+        elif self.mode == 'test':
+            transform_test = self._unalign_transform if self.args.unalign_test else self._align_transform
+            img_size = (img.size[0], img.size[1])
+            
+            if 'Normal' in os.path.split(filename)[0].split(os.sep):    
+                ground_truth =Image.new('L',(img_size[0],img_size[1]),0)
+                img, ground_truth = transform_test(img, ground_truth)
+                return filename, img, ground_truth, 0
+            else:   
+                ground_truth = Image.open(filename.replace("Images", "Masks").replace(".JPG", ".png"))
+                ground_truth = self.resize_transform_visa(ground_truth)  
+                img, ground_truth = transform_test(img, ground_truth) 
+                ground_truth = (ground_truth > 0).float()
+                # TODO check for mask if resized correctly
+                return filename, img, ground_truth, 1
+            
+    def __len__(self):
+        return len(self.files) 
+
+
+
+
+   
 ## Original Loader
 class ImageDataset(Dataset):
     def __init__(self, args, root, transforms_=None, mode='train'):
@@ -425,7 +516,41 @@ def get_dataloader(args):
                                                         batch_size=args.batch_size,shuffle=False,num_workers=1,drop_last=False)
 
     if args.mode == 'visa':
-        pass        
+        
+        EXPERIMENT_LOG_PATH = os.path.join(args.results_dir,args.data_set ,
+                                    f'contamination_{int(args.contamination_rate*100)}',
+                                    f'{args.exp_name}-{args.data_category}')
+        
+        if os.path.exists(os.path.join(EXPERIMENT_LOG_PATH,"experiment_paths.json")) and not args.development:
+            with open(os.path.join(EXPERIMENT_LOG_PATH,"experiment_paths.json"), "r") as file:
+                experiment_paths = json.load(file)     
+                
+        else:    
+            normal_images, validation_images, sampled_anomalies_for_train, sampled_anomalies_for_val, good_images_test, remaining_anomalies_test = get_paths_visa(args,verbose=True)    
+            
+            # sample from train paths if less trainming data should be used
+            train_paths = normal_images + sampled_anomalies_for_train
+            train_paths=random.sample(train_paths,int(len(train_paths)*args.data_ratio))
+            left_out_train_paths = list(set(normal_images + sampled_anomalies_for_train) - set(train_paths))
+            valid_paths = validation_images + sampled_anomalies_for_val
+            test_paths = good_images_test + remaining_anomalies_test
+            experiment_paths={'train':train_paths,'test':test_paths,'valid':valid_paths,'leftout_train_paths':left_out_train_paths,'contamination_rate':args.contamination_rate,'seed':args.seed}
+            
+            if not args.development:
+                os.makedirs(EXPERIMENT_LOG_PATH, exist_ok=True)
+                with open(os.path.join(EXPERIMENT_LOG_PATH,"experiment_paths.json"), "w") as file:
+                    json.dump(experiment_paths, file)
+        
+        DATA_PATH=os.path.join(args.data_root,args.data_category)
+        train_dataloader = DataLoader(ImageDataset_visa(args,DATA_PATH,mode='train',train_paths = experiment_paths['train'],test_paths = None),
+                                                        batch_size=args.batch_size,shuffle=True,num_workers=args.n_cpu,drop_last=False)
+        if len(experiment_paths['valid']) > 0:
+            valid_dataloader = DataLoader(ImageDataset_visa(args,DATA_PATH,mode='test',train_paths = None,test_paths = experiment_paths['valid']),
+                                                batch_size=args.batch_size,shuffle=False,num_workers=1,drop_last=False)
+        else:
+            valid_dataloader = None
+        test_dataloader = DataLoader(ImageDataset_visa(args,DATA_PATH,mode='test',train_paths = None,test_paths = experiment_paths['test']),
+                                                        batch_size=args.batch_size,shuffle=False,num_workers=1,drop_last=False)    
     
     if args.mode == 'utrad_mvtec':
         

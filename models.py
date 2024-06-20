@@ -81,9 +81,9 @@ class MultiLevelTransformer(nn.Module):
         decoder_norm = nn.LayerNorm(d_model)
 
         self.encoder = nn.ModuleList([
-            nn.TransformerEncoder(nn.TransformerEncoderLayer(d_model = d_model, nhead = nhead, 
-                        dim_feedforward = dim_feedforward, dropout = dropout, activation = args.activation)
-                        , num_encoder_layers[i], encoder_norm) for i in range(len(patch_size))])
+            nn.TransformerEncoder(nn.TransformerEncoderLayer(d_model = d_model, nhead = nhead, dim_feedforward = dim_feedforward, dropout = dropout, activation = args.activation),
+                                  num_encoder_layers[i],
+                                  encoder_norm) for i in range(len(patch_size))])
 
         self.decoder = nn.ModuleList([
             nn.TransformerDecoder(nn.TransformerDecoderLayer(d_model = d_model, nhead = nhead, 
@@ -96,8 +96,9 @@ class MultiLevelTransformer(nn.Module):
             for i in range(len(patch_size))])
 
         
-        self.pre_conv = nn.Conv2d(input_dim, d_model, kernel_size=1, bias=False)
-        self.final_layer1 = nn.Conv2d(d_model, input_dim, kernel_size=1, bias=False)
+        self.pre_conv = nn.Conv2d(input_dim, d_model, kernel_size=1, bias=False) # learn a d model kernels from input dim
+        self.final_layer1 = nn.Conv2d(d_model, input_dim, kernel_size=1, bias=False) # learn again input dim kernels from d model
+        
         self.final_layer2 = nn.Sequential(nn.Conv2d(d_model, d_model, kernel_size=1, bias=False),
                                    nn.BatchNorm2d(d_model),
                                    nn.LeakyReLU(negative_slope=0.2),
@@ -119,11 +120,12 @@ class MultiLevelTransformer(nn.Module):
             P *= self.patch_size[i]
         return P, S
 
+    #TODO follow this part of the code x is (1,BHW,C) 
     def forwardDOWN(self, x, encoder_block, position_embedding, level):
         _, BPSPS, C = x.size()
         P, S = self.calculate_size(level)
         B = BPSPS // (P*S*P*S)
-        x = x.view(B, P, S, P, S, C).permute(2,4,0,1,3,5).contiguous().view(S*S, B*P*P, C) #(SS, BPP, C)
+        x = x.view(B, P, S, P, S, C).permute(2,4,0,1,3,5).contiguous().view(S*S, B*P*P, C) #(SS, BPP, C)# understand this line
         pad = self.zeros.expand(-1, B*P*P, -1)
         x = encoder_block(src = torch.cat((pad.detach(), position_embedding(x)), dim=0))
 
@@ -146,14 +148,15 @@ class MultiLevelTransformer(nn.Module):
         
     
     def forward(self, x):
-        x = self.pre_conv(x)
+        x = self.pre_conv(x) # learns new features with 1x1 kernel -> outputs 512 new fmaps
         B, C, H, W = x.size()  #(B, C, H, W)
-        x = self.global_position_embedding(x)
+        x = self.global_position_embedding(x) # adds postional encoding
         x = x.permute(0,2,3,1).contiguous().view(B*H*W,C).unsqueeze(0) #(1, BHW, C)
         latent_list = []
-        for i in range(len(self.encoder)):
+        for i in range(len(self.encoder)):# there are 3 encoders as default , -> push through encoder , push latent through bottleneck
             x, l = self.forwardDOWN(x=x, encoder_block=self.encoder[i], position_embedding=self.position_embedding[i], level=i)
             latent_list.append(self.bottle_neck[i](l))
+            
         for i in range(len(self.encoder)-1, -1, -1):
             x = self.forwardUP(latent_patch=x, latent_pixel=latent_list[i], decoder_block=self.decoder[i], query=self.query_embedding[i], level=i)
         x = x.squeeze(0).view(B, H, W, C).permute(0,3,1,2).contiguous()

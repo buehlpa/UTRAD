@@ -4,7 +4,7 @@ from collections import defaultdict
 import random
 from sklearn.model_selection import train_test_split
 import warnings
-
+import pandas as pd
 
 
 
@@ -180,6 +180,56 @@ def get_paths_beantec(args,verbose=True):
     
     return normal_images, validation_images, sampled_anomalies_for_train, sampled_anomalies_for_val, good_images_test, remaining_anomalies_test
 
+def get_paths_visa(args,verbose=True):
+    
+    DATA_PATH=args.data_root
+    
+    
+    df = pd.read_csv(os.path.join(DATA_PATH,'split_csv/1cls.csv')) # use split 1
+    
+    
+    anomaly_categories=args.dataset_parameters['anomaly_categories']
+    category=args.data_category
+    validation=args.dataset_parameters['use_validation']
+    validation_split=args.dataset_parameters['validation_split']
+    
+    
+
+    
+        
+    category=args.data_category
+
+    df_cat=df[df['object']==category]
+    df_test=df_cat[df_cat['split']=='test']
+
+    normal_train=df_cat[df_cat['split']=='train']['image'].values.tolist()
+    normal_test=df_test[df_test['label']=='normal']['image'].values.tolist()
+    anomaly_test=df_test[df_test['label']=='anomaly']['image'].values.tolist()
+    
+    normal_images=[os.path.join(DATA_PATH,item) for item in normal_train]
+    good_images_test=[os.path.join(DATA_PATH,item) for item in normal_test]
+    anomaly_images_test=[os.path.join(DATA_PATH,item) for item in anomaly_test]
+    
+    
+    n_samples = int(len(normal_images)*args.contamination_rate)
+    sampled_anomalies_for_train, remaining_anomalies_test = stratified_sample(anomaly_images_test, anomaly_categories[category], n_samples, args.test_seed)
+
+    if validation_split > 0:
+        if validation!= True:
+            raise ValueError('validation_split is set to > 0 but use_validation is set to False')
+        normal_images,validation_images = train_test_split(normal_images, test_size=validation_split, random_state=args.seed)
+        sampled_anomalies_for_train, sampled_anomalies_for_val = train_test_split(sampled_anomalies_for_train, test_size=validation_split, random_state=args.seed)
+    else:
+        sampled_anomalies_for_val = []
+        validation_images = []
+        
+    if verbose:
+        print(f'category: {category}, normals train:  {len(normal_images)}, anomalies test: {len(anomaly_images_test)}, normal test: {len(good_images_test)}')       
+        print(f'anomalies test total:     {count_files_by_class(anomaly_images_test, anomaly_categories[category])}')
+        print(f'anomalies test sampled:   {count_files_by_class(sampled_anomalies_for_train, anomaly_categories[category])}')
+        print(f'anomalies test remaining: {count_files_by_class(remaining_anomalies_test, anomaly_categories[category])}')
+    
+    return normal_images, validation_images, sampled_anomalies_for_train, sampled_anomalies_for_val, good_images_test, remaining_anomalies_test
 # read argslog
 
 def open_args_log(log_file_path):

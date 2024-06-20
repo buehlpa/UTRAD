@@ -11,7 +11,7 @@ __pycache__/
 *.pth
 # C extensions
 *.so
-
+*.npy
 # Distribution / packaging
 .Python
 build/

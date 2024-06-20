@@ -367,12 +367,12 @@ def plot_multiple_training_scores(filepaths, title='Screw 10 Percent contam', lo
     plt.show()
     
     
-def last_rows_metric(filepaths):
+def last_rows_metric(filepaths,row=-1):
     """gets reads each df in filepaths list and conacatenases the last row into a new df"""
     dfs=[]
     for path in filepaths:
         dfs.append(pd.DataFrame(read_training_scores(path)))
-    last_rows = [df.iloc[-1] for df in dfs]
+    last_rows = [df.iloc[row] for df in dfs]
     last_rows_df = pd.DataFrame(last_rows)
     last_rows_df.reset_index(drop=True, inplace=True)
     return last_rows_df
