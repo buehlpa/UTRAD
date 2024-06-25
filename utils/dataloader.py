@@ -149,7 +149,15 @@ def get_paths_beantec(args,verbose=True):
     ANOMALY_PATH = os.path.join(DATA_PATH , f'{category}/test')
     
         
-    normal_images=[os.path.join(NORMAL_PATH,item) for item in os.listdir(NORMAL_PATH)]
+        
+    if category=="03":
+        normal_images=args.dataset_parameters["reduced_train_paths"]["03"]
+        
+    else:   
+        normal_images=[os.path.join(NORMAL_PATH,item) for item in os.listdir(NORMAL_PATH)]
+    
+    
+    
     file_path = []
     for root, _, files in os.walk(ANOMALY_PATH):
         for file in files:
@@ -161,7 +169,7 @@ def get_paths_beantec(args,verbose=True):
 
     
     n_samples = int(len(normal_images)*args.contamination_rate)
-    sampled_anomalies_for_train, remaining_anomalies_test = stratified_sample(anomaly_images_test, anomaly_categories[category], n_samples, args.test_seed)
+    sampled_anomalies_for_train, remaining_anomalies_test = stratified_sample(anomaly_images_test, anomaly_categories[category], n_samples, args.seed)
 
     if validation_split > 0:
         if validation!= True:

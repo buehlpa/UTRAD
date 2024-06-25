@@ -30,7 +30,7 @@ def main():
     args = TrainOptions().parse()
     
     EXPERIMENT_PATH = os.path.join(args.results_dir,args.data_set ,f'contamination_{int(args.contamination_rate*100)}',f'{args.exp_name}-{args.data_category}')
-
+    print(args.data_category)
     params=open_args_log(os.path.join(EXPERIMENT_PATH,'args.log'))
     for key in params:
         setattr(args, key, params[key])
@@ -78,8 +78,15 @@ def main():
         with open(os.path.join(EXPERIMENT_PATH,"experiment_paths.json"), "r") as file:
             experiment_paths = json.load(file)
             train_paths=experiment_paths['train']
-            clean_train_paths=[path for path in train_paths if 'good' in path]
+            if args.data_set == 'mvtec' or args.data_set == 'mvtec_loco':
+                clean_train_paths=[path for path in train_paths if 'good' in path]
+                
+            if args.data_set == 'beantec':
+                clean_train_paths = [path for path in train_paths if 'ok' in path.split('/')]
             
+            if args.data_set == 'visa':
+                clean_train_paths = [path for path in train_paths if 'normal' in path.split('/')]
+                
             print("sucessfully loaded experiment paths and added clean train paths")  
     
             experiment_paths['clean_train'] = clean_train_paths
@@ -92,7 +99,7 @@ def main():
         print("Could not load experiment paths")
         sys.exit()
     
-    
+    print(f'args_dataset{args.data_set}')
     
     if args.data_set == 'mvtec':
         DATA_PATH=os.path.join(args.data_root,args.data_category)
@@ -110,7 +117,8 @@ def main():
         
         
         
-    if args.data_set == 'mvtec_loco':
+    elif args.data_set == 'mvtec_loco':
+        
         DATA_PATH=os.path.join(args.data_root,args.data_category)
         
         # allpaths
@@ -124,9 +132,14 @@ def main():
         # load experiment dataset pahts
         _ , _ , test_dataloader = get_dataloader(args)   
     
-    if args.data_set == 'beantec':
-        DATA_PATH=os.path.join(args.data_root,args.data_category)
+    elif args.data_set == 'beantec':
+        print(args.data_category)
+        args.data_category =f'0{args.data_category}'
+        print(args.data_category)
         
+        
+        DATA_PATH=os.path.join(args.data_root,args.data_category)
+        print(DATA_PATH)
         # allpaths
         dataset_clean_train=ImageDataset_beantec(args,DATA_PATH,mode='train',train_paths = experiment_paths['clean_train'], test_paths = None)
         clean_traindataloader = DataLoader(dataset_clean_train, batch_size=2,shuffle=False,num_workers=8,drop_last=False)
@@ -137,9 +150,12 @@ def main():
 
         # load experiment dataset pahts
         _ , _ , test_dataloader = get_dataloader(args)   
+        print('nickeLOADeon')
 
-    if args.data_set == 'visa':
+    elif args.data_set == 'visa':
         DATA_PATH=os.path.join(args.data_root,args.data_category)
+        
+        
         
         # allpaths
         dataset_clean_train=ImageDataset_visa(args,DATA_PATH,mode='train',train_paths = experiment_paths['clean_train'], test_paths = None)
