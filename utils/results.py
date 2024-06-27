@@ -377,6 +377,17 @@ def last_rows_metric(filepaths,row=-1):
     last_rows_df.reset_index(drop=True, inplace=True)
     return last_rows_df
 
+def all_results_conc(filepaths):
+    """cocnatenate all result to one df in filepaths list"""
+    dfs=[]
+    for path in filepaths:
+        df=pd.DataFrame(read_training_scores(path))
+        df['epoch'] = df.index
+        dfs.append(df)
+    rows_df = pd.concat(dfs)
+    rows_df.reset_index(drop=True, inplace=True)
+    return rows_df
+
 def get_anomaly_dictionaries(category):
     # get markes dicts for plotting anomalies
     base_marker = {'good': '.'}
