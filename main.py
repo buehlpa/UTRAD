@@ -10,6 +10,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 from models import Create_nets
 from datasets import get_dataloader
+
+from utils.dataloader import open_args_log
 from configurations.options import TrainOptions
 from torchvision.utils import save_image
 from torchvision import models
@@ -38,6 +40,14 @@ def main():
     if not args.fixed_seed_TRAIN_bool:        
         args.seed = int(time.time()/3)
     
+    if os.path.exists(os.path.join(EXPERIMENT_PATH,'args.log')):
+        params=open_args_log(os.path.join(EXPERIMENT_PATH,'args.log'))
+        for key in params:
+            setattr(args, key, params[key])
+
+    if args.data_set=='beantec':
+        if type(args.data_category) != str:
+            args.data_category = f'0{args.data_category}'
     
     print(f'args.seed {args.seed} {args.fixed_seed_bool}')
 
