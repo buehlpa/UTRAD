@@ -13,7 +13,7 @@ import torch.nn.functional as F
 import torchvision.transforms.functional as TF
 
 from utils.dataloader import get_paths_mvtec , get_paths_mvtec_loco , get_paths_beantec , get_paths_visa
-
+from utils.datasets_synthetic import MVTecSynthAnoDataset
 
 
 _pil_interpolation_to_str = {
@@ -469,14 +469,36 @@ def get_dataloader(args):
         
         
         DATA_PATH=os.path.join(args.data_root,args.data_category)
-        train_dataloader = DataLoader(ImageDataset_mvtec(args,DATA_PATH,mode='train',train_paths = experiment_paths['train'],test_paths = None),
-                                                        batch_size=args.batch_size,shuffle=True,num_workers=args.n_cpu,drop_last=False)
-        if len(experiment_paths['valid']) > 0:
-            valid_dataloader = DataLoader(ImageDataset_mvtec(args,DATA_PATH,mode='test',train_paths = None,test_paths = experiment_paths['valid']),
-                                                batch_size=args.batch_size,shuffle=False,num_workers=1,drop_last=False)
+        
+        if args.use_synthetic:
+            
+            # use synthetic trainig data
+            if args.mode != 'mvtec':
+                raise ValueError("Synthetic data is only available for mvtec yet")
+            training_dataset=MVTecSynthAnoDataset(args,DATA_PATH,mode='train',train_paths = experiment_paths['train'],test_paths = None)
+            train_dataloader = DataLoader(training_dataset,batch_size=args.batch_size,shuffle=True,num_workers=args.n_cpu,drop_last=False)
+            
+            if len(experiment_paths['valid']) > 0:
+                
+                val_dataset=MVTecSynthAnoDataset(args,DATA_PATH,mode='train',train_paths = experiment_paths['valid'],test_paths = None)
+                valid_dataloader = DataLoader(val_dataset,batch_size=args.batch_size,shuffle=True,num_workers=args.n_cpu,drop_last=False)
+            else:
+                valid_dataloader = None
+                
+                test_dataset=MVTecSynthAnoDataset(args,DATA_PATH,mode='test',train_paths = None ,test_paths = experiment_paths['test'])
+                test_dataloader = DataLoader(test_dataset,batch_size=args.batch_size,shuffle=True,num_workers=args.n_cpu,drop_last=False)
+        #####   use no synthetic data  
         else:
-            valid_dataloader = None
-        test_dataloader = DataLoader(ImageDataset_mvtec(args,DATA_PATH,mode='test',train_paths = None,test_paths = experiment_paths['test']),batch_size=args.batch_size,shuffle=False,num_workers=1,drop_last=False)
+            train_dataloader = DataLoader(ImageDataset_mvtec(args,DATA_PATH,mode='train',train_paths = experiment_paths['train'],test_paths = None),
+                                                            batch_size=args.batch_size,shuffle=True,num_workers=args.n_cpu,drop_last=False)
+            if len(experiment_paths['valid']) > 0:
+                valid_dataloader = DataLoader(ImageDataset_mvtec(args,DATA_PATH,mode='test',train_paths = None,test_paths = experiment_paths['valid']),
+                                                    batch_size=args.batch_size,shuffle=False,num_workers=1,drop_last=False)
+            else:
+                valid_dataloader = None
+            test_dataloader = DataLoader(ImageDataset_mvtec(args,DATA_PATH,mode='test',train_paths = None,test_paths = experiment_paths['test']),batch_size=args.batch_size,shuffle=False,num_workers=1,drop_last=False)
+            
+
 
     if args.mode == 'beantec':
         
@@ -508,12 +530,11 @@ def get_dataloader(args):
         train_dataloader = DataLoader(ImageDataset_beantec(args,DATA_PATH,mode='train',train_paths = experiment_paths['train'],test_paths = None),
                                                         batch_size=args.batch_size,shuffle=True,num_workers=args.n_cpu,drop_last=False)
         if len(experiment_paths['valid']) > 0:
-            valid_dataloader = DataLoader(ImageDataset_beantec(args,DATA_PATH,mode='test',train_paths = None,test_paths = experiment_paths['valid']),
-                                                batch_size=args.batch_size,shuffle=False,num_workers=1,drop_last=False)
+            valid_dataloader = DataLoader(ImageDataset_beantec(args,DATA_PATH,mode='test',train_paths = None,test_paths = experiment_paths['valid']),batch_size=args.batch_size,shuffle=False,num_workers=1,drop_last=False)
         else:
             valid_dataloader = None
-        test_dataloader = DataLoader(ImageDataset_beantec(args,DATA_PATH,mode='test',train_paths = None,test_paths = experiment_paths['test']),
-                                                        batch_size=args.batch_size,shuffle=False,num_workers=1,drop_last=False)
+            
+        test_dataloader = DataLoader(ImageDataset_beantec(args,DATA_PATH,mode='test',train_paths = None,test_paths = experiment_paths['test']),batch_size=args.batch_size,shuffle=False,num_workers=1,drop_last=False)
 
     if args.mode == 'visa':
         
@@ -565,4 +586,3 @@ def get_dataloader(args):
 
 
     return train_dataloader,valid_dataloader, test_dataloader
-
