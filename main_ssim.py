@@ -134,7 +134,7 @@ def main():
             torch.cuda.empty_cache()
 
 
-            loss =    5*criterion(recon, outputs)    - 0.5 * ssim_loss(outputs, recon)   #criterion(recon, outputs)  
+            loss =    5*criterion(recon, outputs)    + 0.5 * (1-ssim_loss(outputs, recon))   #criterion(recon, outputs)  
             loss_scale = criterion(std, torch.norm(recon - outputs, p = 2, dim = 1, keepdim = True).detach())
             (loss+loss_scale).backward()
 
