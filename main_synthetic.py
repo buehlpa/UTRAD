@@ -144,13 +144,18 @@ def main():
             loss = criterion(recon, outputs)
             loss_scale = criterion(std, torch.norm(recon - outputs, p=2, dim=1, keepdim=True).detach())
 
-            # Additional penalty for images with anomalies
-            anomaly_penalty = torch.mean((recon - outputs) ** 2, dim=[1, 2, 3])  # Reduce across spatial dimensions
-            anomaly_penalty = anomaly_penalty * has_anomaly.view(-1)  # Ensure has_anomaly matches batch size and broadcast
+
+
+            # # Additional penalty for images with anomalies
+            # anomaly_penalty = torch.mean((recon - outputs) ** 2, dim=[1, 2, 3])  # Reduce across spatial dimensions
+            # anomaly_penalty = anomaly_penalty * has_anomaly.view(-1)  # Ensure has_anomaly matches batch size and broadcast
 
             
-            totloss = loss + anomaly_penalty.mean()
-            (totloss+loss_scale).backward()
+            # totloss = loss + anomaly_penalty.mean()
+            # (totloss+loss_scale).backward()
+
+
+
 
             optimizer.step()
             torch.cuda.empty_cache()

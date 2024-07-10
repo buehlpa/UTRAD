@@ -475,6 +475,7 @@ def get_dataloader(args):
             # use synthetic trainig data
             if args.mode != 'mvtec':
                 raise ValueError("Synthetic data is only available for mvtec yet")
+            
             training_dataset=MVTecSynthAnoDataset(args,DATA_PATH,mode='train',train_paths = experiment_paths['train'],test_paths = None)
             train_dataloader = DataLoader(training_dataset,batch_size=args.batch_size,shuffle=True,num_workers=args.n_cpu,drop_last=False)
             
@@ -485,8 +486,9 @@ def get_dataloader(args):
             else:
                 valid_dataloader = None
                 
-                test_dataset=MVTecSynthAnoDataset(args,DATA_PATH,mode='test',train_paths = None ,test_paths = experiment_paths['test'])
-                test_dataloader = DataLoader(test_dataset,batch_size=args.batch_size,shuffle=True,num_workers=args.n_cpu,drop_last=False)
+            test_dataset=MVTecSynthAnoDataset(args,DATA_PATH,mode='test',train_paths = None ,test_paths = experiment_paths['test'])
+            test_dataloader = DataLoader(test_dataset,batch_size=args.batch_size,shuffle=False,num_workers=1,drop_last=False)
+
         #####   use no synthetic data  
         else:
             train_dataloader = DataLoader(ImageDataset_mvtec(args,DATA_PATH,mode='train',train_paths = experiment_paths['train'],test_paths = None),

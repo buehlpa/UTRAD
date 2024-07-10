@@ -12,6 +12,7 @@ import imgaug.augmenters as iaa
 from PIL import Image
 from torchvision import transforms
 import random
+import torchvision.transforms.functional as TF
 
 
 # from data.perlin import rand_perlin_2d_np
@@ -137,10 +138,12 @@ class MVTecSynthAnoDataset(Dataset):
         
         if mode == 'train':
             self.files = train_paths
+            
         elif mode == 'test':
             self.files = test_paths
+            
         
-        
+        print(f"Number of images in {mode} mode: {len(self.files)}")
         
         self.transform_train = transforms.Compose([ transforms.Resize((self.crop_size, self.crop_size), Image.BICUBIC),
                                                 transforms.Pad(int(self.crop_size/10),fill=0,padding_mode='constant'),
@@ -149,13 +152,11 @@ class MVTecSynthAnoDataset(Dataset):
                                                 transforms.ToTensor(),
                                                 transforms.Normalize(mean=[0.485, 0.456, 0.406],
                                                     std=[0.229, 0.224, 0.225 ]) ])
-        
-        self.resize_transform_loco = transforms.Resize((self.crop_size, self.crop_size), Image.BICUBIC)
-
         ########################################
 
+        self.resize_transform_loco = transforms.Resize((self.crop_size, self.crop_size), Image.BICUBIC)
 
-        self.proba_for_anomaly = 0.5
+        
 
         self.classname=args.data_category
         
@@ -207,8 +208,37 @@ class MVTecSynthAnoDataset(Dataset):
         self.textural_foreground_path = sorted(glob.glob(foreground_path +"/thresh/*.png"))
 
     def __len__(self):
-        return len(self.image_paths)
+        return len(self.files)
+    
+    def _align_transform(self, img, mask):
+        #resize to 224
+        img = TF.resize(img, self.crop_size, Image.BICUBIC)
+        mask = TF.resize(mask, self.crop_size, Image.NEAREST)
+        #toTensor
+        img = TF.to_tensor(img)
+        mask = TF.to_tensor(mask)
+        #normalize
+        img = TF.normalize(img, mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225 ])
+        return img, mask
 
+    def _unalign_transform(self, img, mask):
+        #resize to 256
+        img = TF.resize(img, self.img_size, Image.BICUBIC)
+        mask = TF.resize(mask, self.img_size, Image.NEAREST)
+        #random rotation
+        angle = transforms.RandomRotation.get_params([-10, 10])
+        img = TF.rotate(img, angle, fill=(0,))
+        mask = TF.rotate(mask, angle, fill=(0,))
+        #random crop
+        i, j, h, w = transforms.RandomCrop.get_params(img, output_size=(self.crop_size, self.crop_size))
+        img = TF.crop(img, i, j, h, w)
+        mask = TF.crop(mask, i, j, h, w)
+        #toTensor
+        img = TF.to_tensor(img)
+        mask = TF.to_tensor(mask)
+        #normalize
+        img = TF.normalize(img, mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225 ])
+        return img, mask
 
     def random_choice_foreground_path(self):
         foreground_path_id = torch.randint(0, len(self.textural_foreground_path), (1,)).item()
@@ -290,7 +320,7 @@ class MVTecSynthAnoDataset(Dataset):
             anomaly_source_img = cv2.cvtColor(cv2.imread(anomaly_source_path),cv2.COLOR_BGR2RGB)
             anomaly_source_img = cv2.resize(anomaly_source_img, dsize=(
                 self.resize_shape[1], self.resize_shape[0]))
-            anomaly_img_augmented = aug(image=anomaly_source_img)
+            anomaly_img_augmented = anomaly_source_img# aug(image=anomaly_source_img)# no aug
             img_object_thr = anomaly_img_augmented.astype(
                 np.float32) * object_perlin/255.0
             
@@ -301,13 +331,14 @@ class MVTecSynthAnoDataset(Dataset):
                 anomaly_source_img = cv2.cvtColor(cv2.imread(anomaly_source_path),cv2.COLOR_BGR2RGB)
                 anomaly_source_img = cv2.resize(anomaly_source_img, dsize=(
                     self.resize_shape[1], self.resize_shape[0]))
-                anomaly_img_augmented = aug(image=anomaly_source_img)
+                anomaly_img_augmented = anomaly_source_img#aug(image=anomaly_source_img)
+                anomaly_img_augmented = anomaly_source_img# aug(image=anomaly_source_img)# no aug
                 img_object_thr = anomaly_img_augmented.astype(
                     np.float32) * object_perlin/255.0
 
             else: #self-augmentation
                 aug = self.randAugmenter()
-                anomaly_image = aug(image=cv2_image)
+                anomaly_image = cv2_image#aug(image=cv2_image)#no aug
                 high, width = anomaly_image.shape[0], anomaly_image.shape[1]
                 gird_high, gird_width = int(high/8), int(width/8)
                 wi = np.split(anomaly_image, range(
@@ -354,7 +385,7 @@ class MVTecSynthAnoDataset(Dataset):
             gets_anomaly_rand = torch.rand(1).numpy()[0]
             
             
-            if gets_anomaly_rand > self.proba_for_anomaly:
+            if gets_anomaly_rand > self.args.synthetic_ratio:
                 has_anomaly=1
                 
                 image = cv2.cvtColor(cv2.imread(filename),cv2.COLOR_BGR2RGB)
@@ -362,7 +393,9 @@ class MVTecSynthAnoDataset(Dataset):
                 
                 cv2_image=image
                 thresh_path = self.get_foreground_mvtec(filename)
-                                
+                
+                #print(f'thresh_path: {thresh_path}')
+                
                 thresh=cv2.imread(thresh_path,0)
                 thresh = cv2.resize(thresh,dsize=(self.resize_shape[1], self.resize_shape[0]))
 
@@ -378,9 +411,13 @@ class MVTecSynthAnoDataset(Dataset):
                 image = np.transpose(image, (2, 0, 1))
                 anomaly_mask = np.transpose(anomaly_mask, (2, 0, 1))
                 
+                
+                #print(np.shape(augmented_image))
                 augmented_image=torch.from_numpy(augmented_image)
                 
                 #print(f'type of img: {type(augmented_image)}, shape of img: {augmented_image.shape} dtype of img: {augmented_image.dtype}')
+                
+                
                 
                 
                 to_pil = transforms.ToPILImage()
@@ -414,30 +451,36 @@ class MVTecSynthAnoDataset(Dataset):
                 return filename, img, has_anomaly
         
         elif self.mode == 'test':
-            image = cv2.imread(filename)
-            image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+            # img = Image.open(filename)
+            # img = img.convert('RGB')
             
+            image = cv2.cvtColor(cv2.imread(filename),cv2.COLOR_BGR2RGB)
+            image = cv2.resize(image, dsize=(self.resize_shape[1], self.resize_shape[0]))
+            img = np.array(image).astype(np.float32)/255.0
+            img=img.transpose(2, 0, 1)
+            img=torch.from_numpy(img)
+            to_pil = transforms.ToPILImage()
+            img = to_pil(img)
             
+            #print(filename)
             
             transform_test = self._unalign_transform if self.args.unalign_test else self._align_transform
             img_size = (img.size[0], img.size[1])
             
             
             if 'good' in filename:    
-                ground_truth = np.zeros((img_size[1], img_size[0]), dtype=np.float32)
-                img, ground_truth = transform_test(image, ground_truth)
-                return filename, img, ground_truth, 0
+                ground_truth =Image.new('L',(img_size[0],img_size[1]),0)
+                img, ground_truth = transform_test(img, ground_truth)
                 
-
+                return filename, img, ground_truth, 0
             else:   
-                if self.args.mode == 'mvtec_loco':
-                    gt_filename = filename.replace("test", "ground_truth").replace(".png", "/000.png")
-                elif self.rgs.mode == 'mvtec':
-                    gt_filename = filename.replace("test", "ground_truth").replace(".png", "_mask.png")
-                else:
-                    raise ValueError("Unsupported mode")
-
-                ground_truth = cv2.imread(gt_filename, cv2.IMREAD_GRAYSCALE)
-                ground_truth = self.resize_transform_loco(ground_truth)
-                img, ground_truth = transform_test(image, ground_truth)
+                # different ground truth schema for mvtec_loco
+                if self.args.mode=='mvtec_loco':
+                    ground_truth = Image.open(filename.replace("test", "ground_truth").replace(".png", "/000.png"))                        
+                if self.args.mode=='mvtec':
+                    ground_truth = Image.open(filename.replace("test", "ground_truth").replace(".png", "_mask.png"))
+                
+                ground_truth = self.resize_transform_loco(ground_truth)  
+                img, ground_truth = transform_test(img, ground_truth)
+                
                 return filename, img, ground_truth, 1
