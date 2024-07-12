@@ -80,6 +80,7 @@ class ImageDataset_mvtec(Dataset):
         i, j, h, w = transforms.RandomCrop.get_params(img, output_size=(self.crop_size, self.crop_size))
         img = TF.crop(img, i, j, h, w)
         mask = TF.crop(mask, i, j, h, w)
+        
         #toTensor
         img = TF.to_tensor(img)
         mask = TF.to_tensor(mask)

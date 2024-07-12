@@ -188,6 +188,7 @@ def get_paths_beantec(args,verbose=True):
     
     return normal_images, validation_images, sampled_anomalies_for_train, sampled_anomalies_for_val, good_images_test, remaining_anomalies_test
 
+
 def get_paths_visa(args,verbose=True):
     
     DATA_PATH=args.data_root
@@ -202,9 +203,6 @@ def get_paths_visa(args,verbose=True):
     validation_split=args.dataset_parameters['validation_split']
     
     
-
-    
-        
     category=args.data_category
 
     df_cat=df[df['object']==category]
@@ -218,8 +216,13 @@ def get_paths_visa(args,verbose=True):
     good_images_test=[os.path.join(DATA_PATH,item) for item in normal_test]
     anomaly_images_test=[os.path.join(DATA_PATH,item) for item in anomaly_test]
     
+    if args.fixed_n_normals != None and args.fixed_n_normals <= len(normal_images):
+        normal_images= random.sample(normal_images, args.fixed_n_normals)
     
     n_samples = int(len(normal_images)*args.contamination_rate)
+        
+    
+    
     sampled_anomalies_for_train, remaining_anomalies_test = stratified_sample(anomaly_images_test, anomaly_categories[category], n_samples, args.test_seed)
 
     if validation_split > 0:
@@ -238,7 +241,8 @@ def get_paths_visa(args,verbose=True):
         print(f'anomalies test remaining: {count_files_by_class(remaining_anomalies_test, anomaly_categories[category])}')
     
     return normal_images, validation_images, sampled_anomalies_for_train, sampled_anomalies_for_val, good_images_test, remaining_anomalies_test
-# read argslog
+
+
 
 def open_args_log(log_file_path):
     # Initialize an empty dictionary to store the parameters

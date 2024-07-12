@@ -85,7 +85,7 @@ def main():
                 clean_train_paths = [path for path in train_paths if 'ok' in path.split('/')]
             
             if args.data_set == 'visa':
-                clean_train_paths = [path for path in train_paths if 'normal' in path.split('/')]
+                clean_train_paths = [path for path in train_paths if 'Normal' in path.split('/')]
                 
             print("sucessfully loaded experiment paths and added clean train paths")  
     

@@ -36,6 +36,8 @@ class TrainOptions():
         self.parser.add_argument('--unalign_test',  action='store_true', default=False, help='whether to valid with unaligned data: \ in this mode, test images are random ratate +-10degree, and randomcrop from 256x256 to 224x224')
         self.parser.add_argument('--data_root', type=str, default='/home/bule/projects/datasets/mvtec_anomaly_detection/', help='dir of the dataset')
         self.parser.add_argument('--synthetic_anomaly_root', type=str, default='/home/bule/projects/datasets/dtd', help='dir of the dataset')
+        
+        self.parser.add_argument('--fixed_n_normals', type=int, default=None, help='a fixed number to be in the trainingset o normal images, randomly sampled, onöy used for VISA')
         self.parser.add_argument('--data_category', type=str, default="cable", help='category name of the dataset')
         self.parser.add_argument('--data_set', type=str, default="mvtec", help='dataset , mvtec , mvtec_loco, beantec')
         self.parser.add_argument('--batch_size', type=int, default=2, help='size of the batches')
