@@ -75,9 +75,16 @@ def main():
     criterion = nn.MSELoss()
     
     if os.path.exists(os.path.join(EXPERIMENT_PATH,"experiment_paths.json")) and not args.development:
-        refine_paths(os.path.join(EXPERIMENT_PATH,"experiment_paths.json"))
+        
         with open(os.path.join(EXPERIMENT_PATH,"experiment_paths.json"), 'r') as file:
             experiment_paths = json.load(file)
+        
+        experiment_paths=refine_paths(experiment_paths,args=args)
+        
+        with open(os.path.join(EXPERIMENT_PATH,"experiment_paths.json"), 'w') as file:
+            json.dump(experiment_paths, file)
+        
+
         print("Successfully saved the updated experiment paths")   
         
     else:

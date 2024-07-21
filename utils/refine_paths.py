@@ -10,12 +10,12 @@ import numpy as np
 import torch.nn.functional as F
 
 
-experiment_path = "/home/bule/projects/UTRAD/results/mvtec/contamination_10/Exp_07_06_run_1-leather/experiment_paths.json"
+# experiment_path = "/home/bule/projects/UTRAD/results/mvtec/contamination_10/Exp_07_06_run_1-leather/experiment_paths.json"
 
-def refine_paths(experiment_path):
+def refine_paths(experiment,args):
 
-    with open(experiment_path, 'r') as file:
-        experiment = json.load(file)
+    # with open(experiment_path, 'r') as file:
+    #     experiment = json.load(file)
 
     path_list = experiment['train']
 
@@ -102,16 +102,16 @@ def refine_paths(experiment_path):
     lof_column_sums = lof_outliers.sum(axis=0)
 
 
-    remove_inds=np.array(lof_column_sums).argsort()[:int(0.1 * len(lof_column_sums))]
+    remove_inds=np.array(lof_column_sums).argsort()[:int(args.assumed_contamination_rate * len(lof_column_sums))]
     selected_paths = [path_list[i] for i in remove_inds]
     refined_paths= [path for path in path_list if path not in selected_paths]
 
-    experiment['lof_scores'] = isolation_column_sums.tolist()
-    experiment['isoforest_scores'] = lof_column_sums.tolist()
+    experiment['isoforest_scores'] = isolation_column_sums.tolist()
+    experiment['lof_scores'] = lof_column_sums.tolist()
     experiment['lof_refined_paths'] = refined_paths
 
+    return experiment
 
-
-    with open(experiment_path, 'w') as file:
-        json.dump(experiment, file)
+    # with open(experiment_path, 'w') as file:
+    #     json.dump(experiment, file)
         
