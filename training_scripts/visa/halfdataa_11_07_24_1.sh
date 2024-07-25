@@ -117,3 +117,5 @@ python main.py       --exp_name Exp_11_07_24_run_5 --data_category pipepfryum --
 python cleantrain.py --exp_name Exp_11_07_24_run_5 --data_category pipepfryum --mode visa  --data_set visa --data_root /home/bule/projects/datasets/VisA --contamination_rate 0.1   --batch_size 2  --fixed_seed_bool False --fixed_n_normals 250
 
 
+
+

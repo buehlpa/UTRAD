@@ -14,15 +14,15 @@ import pickle
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
 
 from transformers import ViTFeatureExtractor, ViTModel
-
+from transformers import AutoFeatureExtractor, AutoModel
 from torchvision import models, transforms
 import torch.nn.functional as F
 import torchvision.transforms as T
 
+import os
+os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
 
 
-
-from transformers import AutoFeatureExtractor, AutoModel
 
 
 
@@ -742,138 +742,68 @@ def main():
         
         
         
-        if argu.category in ['carpet','grid','hazelnut','pill','screw','wood',]:
-            args = TrainOptions(category)
-            data = {'paths':[],'gt_labels':[],"Vit_beans; LOF":[],"Vit_beans; Cosine":[]}
-            path=f'/home/bule/projects/UTRAD/results/mvtec/contamination_10/Exp_07_06_run_{argu.run}-{category}/experiment_paths.json' 
 
-            with open(path, 'r') as file:
-                experiment = json.load(file)
-            ############################################################################## OWN REFINEMENT FUNCTION
-            labels=[0 if 'good' in path else 1 for path in experiment['train']]
+        args = TrainOptions(category)
+        data = {'paths':[],'gt_labels':[],"Vit_beans; LOF":[],"Vit_beans; Cosine":[]}
+        path=f'/home/bule/projects/UTRAD/results/mvtec/contamination_10/Exp_07_06_run_{argu.run}-{category}/experiment_paths.json' 
+
+        with open(path, 'r') as file:
+            experiment = json.load(file)
+        ############################################################################## OWN REFINEMENT FUNCTION
+        labels=[0 if 'good' in path else 1 for path in experiment['train']]
 
 
-            scaler = MinMaxScaler()
+        scaler = MinMaxScaler()
 
-            images=[]
-            for filename in experiment['train']:
-                img = Image.open(filename)
-                if img.mode == 'L':  # Check if the image is grayscale (single channel)
-                    img = img.convert('RGB')  # Convert grayscale to RGB (three channels)
-                images.append(img)
+        images=[]
+        for filename in experiment['train']:
+            img = Image.open(filename)
+            if img.mode == 'L':  # Check if the image is grayscale (single channel)
+                img = img.convert('RGB')  # Convert grayscale to RGB (three channels)
+            images.append(img)
+        
+        images=[transformation_chain(image) for image in images]
+        images=torch.stack(images)
+        embeddings = model(images).last_hidden_state[:, 0].cpu()
+        embeddings = F.normalize(embeddings, p=2, dim=1)
+        
+        cosine_similarity_matrix = torch.mm(embeddings, embeddings.t())
+        col_sums = np.sum(cosine_similarity_matrix.detach().numpy(), axis=0)
+        colsums_sorted = scaler.fit_transform(col_sums.reshape(-1, 1)).flatten()
+        colsums_sorted=1-colsums_sorted
+        data["Vit_beans; Cosine"].append(colsums_sorted)
+        embeddings_=embeddings.detach().numpy()
+
+        lof = LocalOutlierFactor(n_neighbors=20, contamination=0.1)
+        outlier_labels = lof.fit_predict(embeddings_)
+        anomaly_scores = -lof.negative_outlier_factor_
+        
+        data["Vit_beans; LOF"].append(scaler.fit_transform(np.array(anomaly_scores).reshape(-1, 1)).flatten())
+        print("run completed")
+    
+    
+    
+        filename = f'/home/bule/projects/UTRAD/results/refinement/Refinement_Comparison_SOTA_{category}.pkl'
+
+        if os.path.exists(filename):
             
-            images=[transformation_chain(image) for image in images]
-            images=torch.stack(images)
-            embeddings = model(images).last_hidden_state[:, 0].cpu()
-            embeddings = F.normalize(embeddings, p=2, dim=1)
+            with open(filename, 'rb') as file:
+                data_load = pickle.load(file)    
+                
+                data_load["Vit_beans; LOF"].append(data["Vit_beans; LOF"])
+                data_load["Vit_beans; Cosine"].append(data["Vit_beans; Cosine"])
+                
+            with open(filename, 'wb') as file:
+                pickle.dump(data_load, file)    
+                
+                
+        else:    
             
-            cosine_similarity_matrix = torch.mm(embeddings, embeddings.t())
-            col_sums = np.sum(cosine_similarity_matrix.detach().numpy(), axis=0)
-            colsums_sorted = scaler.fit_transform(col_sums.reshape(-1, 1)).flatten()
-            colsums_sorted=1-colsums_sorted
-            data["Vit_beans; Cosine"].append(colsums_sorted)
-            embeddings_=embeddings.detach().numpy()
-
-            lof = LocalOutlierFactor(n_neighbors=20, contamination=0.1)
-            outlier_labels = lof.fit_predict(embeddings_)
-            anomaly_scores = -lof.negative_outlier_factor_
-            
-            data["Vit_beans; LOF"].append(scaler.fit_transform(np.array(anomaly_scores).reshape(-1, 1)).flatten())
-            print("run completed")
-        
-        
-        
-            filename = f'/home/bule/projects/UTRAD/results/refinement/Refinement_Comparison_SOTA_{category}.pkl'
-
-            if os.path.exists(filename):
-                
-                with open(filename, 'rb') as file:
-                    data_load = pickle.load(file)    
-                    
-                    data_load["Vit_beans; LOF"]=data["Vit_beans; LOF"]
-                    data_load["Vit_beans; Cosine"]=data["Vit_beans; Cosine"]
-                    
-                with open(filename, 'wb') as file:
-                    pickle.dump(data_load, file)    
-                    
-                    
-            else:    
-                
-                # Dump the dictionary to a pickle file
-                with open(filename, 'wb') as file:
-                    pickle.dump(data, file)
-                
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        else:
-        
-        
-        
-        
-            args = TrainOptions(category)
-
-
-
-
-
-
-
-            data = {'paths':[],'gt_labels':[],"Vit_beans; LOF":[],"Vit_beans; Cosine":[]}
-            paths=[f'/home/bule/projects/UTRAD/results/mvtec/contamination_10/Exp_07_06_run_{i}-{category}/experiment_paths.json' for i in range(1,6)]
-
-            for path in paths:
-                with open(path, 'r') as file:
-                    experiment = json.load(file)
-                ############################################################################## OWN REFINEMENT FUNCTION
-                labels=[0 if 'good' in path else 1 for path in experiment['train']]
-
-
-                scaler = MinMaxScaler()
-
-                images=[]
-                for filename in experiment['train']:
-                    img = Image.open(filename)
-                    if img.mode == 'L':  # Check if the image is grayscale (single channel)
-                        img = img.convert('RGB')  # Convert grayscale to RGB (three channels)
-                    images.append(img)
-                
-                images=[transformation_chain(image) for image in images]
-                images=torch.stack(images)
-                embeddings = model(images).last_hidden_state[:, 0].cpu()
-                embeddings = F.normalize(embeddings, p=2, dim=1)
-                
-                cosine_similarity_matrix = torch.mm(embeddings, embeddings.t())
-                col_sums = np.sum(cosine_similarity_matrix.detach().numpy(), axis=0)
-                colsums_sorted = scaler.fit_transform(col_sums.reshape(-1, 1)).flatten()
-                colsums_sorted=1-colsums_sorted
-                data["Vit_beans; Cosine"].append(colsums_sorted)
-                embeddings_=embeddings.detach().numpy()
-
-                lof = LocalOutlierFactor(n_neighbors=20, contamination=0.1)
-                outlier_labels = lof.fit_predict(embeddings_)
-                anomaly_scores = -lof.negative_outlier_factor_
-                
-                data["Vit_beans; LOF"].append(scaler.fit_transform(np.array(anomaly_scores).reshape(-1, 1)).flatten())
-                print("run completed")
-                
-            filename = f'/home/bule/projects/UTRAD/results/refinement/Refinement_Comparison_SOTA_{category}.pkl'
-
-
             # Dump the dictionary to a pickle file
             with open(filename, 'wb') as file:
                 pickle.dump(data, file)
+
+
 
 
     if argu.mode=='vit_imagenet': 
@@ -933,10 +863,8 @@ def main():
         with open(path, 'r') as file:
             experiment = json.load(file)
         ############################################################################## OWN REFINEMENT FUNCTION
-        labels=[0 if 'good' in path else 1 for path in experiment['train']]
 
 
-        scaler = MinMaxScaler()
 
         images=[]
         for filename in experiment['train']:
@@ -950,19 +878,28 @@ def main():
         embeddings = model(images).last_hidden_state[:, 0].cpu()
         embeddings = F.normalize(embeddings, p=2, dim=1)
         
+        embeddings_=embeddings.detach().numpy()
+        scaler = MinMaxScaler()
+        lof = LocalOutlierFactor(n_neighbors=20, contamination=0.1)
+        outlier_labels = lof.fit_predict(embeddings_)
+        anomaly_scores = -lof.negative_outlier_factor_
+        
+        
+        
+        data["Vit_imagenet; LOF"].append(scaler.fit_transform(np.array(anomaly_scores).reshape(-1, 1)).flatten())
+        print("run completed")
+        
+        
         cosine_similarity_matrix = torch.mm(embeddings, embeddings.t())
         col_sums = np.sum(cosine_similarity_matrix.detach().numpy(), axis=0)
         colsums_sorted = scaler.fit_transform(col_sums.reshape(-1, 1)).flatten()
         colsums_sorted=1-colsums_sorted
         data["Vit_imagenet; Cosine"].append(colsums_sorted)
-        embeddings_=embeddings.detach().numpy()
-
-        lof = LocalOutlierFactor(n_neighbors=20, contamination=0.1)
-        outlier_labels = lof.fit_predict(embeddings_)
-        anomaly_scores = -lof.negative_outlier_factor_
         
-        data["Vit_imagenet; LOF"].append(scaler.fit_transform(np.array(anomaly_scores).reshape(-1, 1)).flatten())
-        print("run completed")
+        
+        
+        
+
     
     
     
@@ -973,8 +910,8 @@ def main():
             with open(filename, 'rb') as file:
                 data_load = pickle.load(file)    
                 
-                data_load["Vit_imagenet; LOF"]=data["Vit_imagenet; LOF"]
-                data_load["Vit_imagenet; Cosine"]=data["Vit_imagenet; Cosine"]
+                data_load["Vit_imagenet; LOF"].append(data["Vit_imagenet; LOF"][0])
+                data_load["Vit_imagenet; Cosine"].append(data["Vit_imagenet; Cosine"][0])
                 
             with open(filename, 'wb') as file:
                 pickle.dump(data_load, file)    
