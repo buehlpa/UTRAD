@@ -79,7 +79,7 @@ def refine_paths(experiment,args):
     backbone.layer2[-1].register_forward_hook(hook)
     backbone.layer3[-1].register_forward_hook(hook)
 
-    img_list = [load_image(path, aligned=False) for path in path_list]
+    img_list = [load_image(path, aligned=True) for path in path_list]
 
     with torch.no_grad():
         for img in img_list:
@@ -597,7 +597,7 @@ def main():
             
             ############################################################################ ON ORIGINAL IMAGE DATA PCA AND TSNE LOF AND ISO
             
-            img_list = [load_image(path, aligned=False) for path in experiment_refined['train']]
+            img_list = [load_image(path, aligned=True) for path in experiment_refined['train']]
             img_array = np.array([img.numpy().flatten() for img in img_list])
             
             #PCA
@@ -693,7 +693,7 @@ def main():
         with open(filename, 'wb') as file:
             pickle.dump(data, file)
             
-            
+    ####################################################################vit_beans        
     if argu.mode=='vit_beans':
 
 
@@ -790,8 +790,8 @@ def main():
             with open(filename, 'rb') as file:
                 data_load = pickle.load(file)    
                 
-                data_load["Vit_beans; LOF"].append(data["Vit_beans; LOF"])
-                data_load["Vit_beans; Cosine"].append(data["Vit_beans; Cosine"])
+                data_load["Vit_beans; LOF"].append(data["Vit_beans; LOF"][0])
+                data_load["Vit_beans; Cosine"].append(data["Vit_beans; Cosine"][0])
                 
             with open(filename, 'wb') as file:
                 pickle.dump(data_load, file)    
@@ -805,7 +805,7 @@ def main():
 
 
 
-
+    ####################################################################vit image_net
     if argu.mode=='vit_imagenet': 
         
         # Define the TrainOptions class
