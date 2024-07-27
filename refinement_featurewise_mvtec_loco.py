@@ -129,301 +129,11 @@ def refine_paths(experiment,args):
 
     # with open(experiment_path, 'w') as file:
     #     json.dump(experiment, file)
-        
-
-
-def precision_recall(distance_metric: list, groundtruth: list, quantiles: float = 0.001, thresh_larger: bool = False) -> tuple:
-    """
-    Calculates precision and recall for a given distance metric.
-    params: 
-        distance_metric: list of distance metric values
-        groundtruth: list of groundtruth labels
-        quantiles: number of quantiles to calculate precision and recall
-        thresh_larger: if True, then the larger the distance_metric the more likely it's a normal sample
-    returns: 
-        tuple of precision and recall
-    """
-    quantile_list = np.arange(0, 1, quantiles)
-    precision, recall = [], []
-    for quantile in quantile_list:
-        thresh = np.quantile(distance_metric, quantile)
-        predict = np.zeros_like(distance_metric)  # predictions are all normals
-        if thresh_larger:
-            idxs = np.where(np.array(distance_metric) <= thresh)[0]  # all anomalies
-        else:
-            idxs = np.where(np.array(distance_metric) >= thresh)[0]  # all anomalies
-
-        predict[idxs] = 1
-        tn, fp, fn, tp = confusion_matrix(groundtruth, predict).ravel()
-
-        precision.append(tp / (tp + fp))
-        recall.append(tp / (tp + fn))
-    return precision, recall
 
 
 
-def precision_recall(distance_metric: list, groundtruth: list, quantiles: float = 0.001, thresh_larger: bool = False) -> tuple:
-    """
-    Calculates precision and recall for a given distance metric.
-    params: 
-        distance_metric: list of distance metric values
-        groundtruth: list of groundtruth labels
-        quantiles: number of quantiles to calculate precision and recall
-        thresh_larger: if True, then the larger the distance_metric the more likely it's a normal sample
-    returns: 
-        tuple of precision and recall
-    """
-    quantile_list = np.arange(0, 1, quantiles)
-    precision, recall = [], []
-    for quantile in quantile_list:
-        thresh = np.quantile(distance_metric, quantile)
-        predict = np.zeros_like(distance_metric)  # predictions are all normals
-        if thresh_larger:
-            idxs = np.where(np.array(distance_metric) <= thresh)[0]  # all anomalies
-        else:
-            idxs = np.where(np.array(distance_metric) >= thresh)[0]  # all anomalies
 
-        predict[idxs] = 1
-        tn, fp, fn, tp = confusion_matrix(groundtruth, predict).ravel()
 
-        precision.append(tp / (tp + fp))
-        recall.append(tp / (tp + fn))
-    return precision, recall
-
-def PR_ROC_runs(data_input: dict, category: str):
-    plt.figure(figsize=(20, 8))  # Increased figure size for better visibility
-    plt.suptitle(f'{category}', y=1.02, fontsize=16)
-    
-    class_names = []
-    data = {}
-    
-    # Scale all scores in data
-    for key in data_input.keys():
-        if key not in ['paths', 'gt_labels']:
-            # scale the scores from the own approach
-            if key in ['own; ISO', 'own; LOF']:
-    
-                class_names.append(key)
-                scaled_runs = []
-                runs = data_input[key]
-                for run in runs:
-                    if not isinstance(run, np.ndarray):
-                        run = np.array(run)
-                        
-                    scaler = MinMaxScaler()
-                    scores_scaled = scaler.fit_transform(run.reshape(-1, 1)).flatten()
-                    scaled_runs.append(1 - scores_scaled)
-                data[key] = np.array(scaled_runs)
-            else:
-                class_names.append(key)
-                data[key] = np.array(data_input[key])    
-                
-            
-    print(class_names)
-            
-
-    # colors = [
-    #     'skyblue', 'blue',
-    #     'lightcoral', 'red',
-    #     'lightgray', 'gray',        
-    #     'lightgreen', 'green',
-    #     'peachpuff', 'orange',
-    #     'lightyellow', 'yellow',
-    #     'lightpink', 'deeppink',
-    #     'thistle', 'purple',
-    #     'palegreen', 'limegreen',
-    #     'powderblue', 'teal',
-    #     'lightsteelblue', 'navy'
-    # ]
-    colors = ['skyblue', 'blue','lightcoral', 'red','purple', 'thistle','lightgreen', 'green', 'navy','lightgray', 'gray','deeppink','peachpuff', 'orange','lightolive', 'darkolivegreen','palegreen', 'limegreen','powderblue', 'teal','lightsteelblue', 'navy']
-
-    # Precision-Recall Curve
-    plt.subplot(1, 2, 1)
-    for class_index, class_name in enumerate(class_names):
-        print(class_name)
-        scores_list = data[class_name]
-        
-        # Calculate precision-recall values for each run
-        precision_runs = []  # List to store precision values for each run
-        recall_runs = [] 
-        
-        for scores, gt in zip(scores_list, data_input['gt_labels']):
-            
-            precision, recall = precision_recall(scores, gt)
-            precision_runs.append(precision)
-            recall_runs.append(recall)
-
-        precision_mean = np.mean(precision_runs, axis=0)
-        recall_mean = np.mean(recall_runs, axis=0)
-        
-        precision_max = np.max(precision_runs, axis=0)
-        precision_min = np.min(precision_runs, axis=0)
-        pr_auc = auc(recall_mean, precision_mean)
-
-        plt.fill_between(recall_mean, precision_min, precision_max, alpha=0.1, color=colors[class_index])
-        plt.plot(recall_mean, precision_mean, label=f'{class_name} AUC {pr_auc:.3f}', color=colors[class_index])
-
-    plt.xlabel('Recall')
-    plt.ylabel('Precision')
-    plt.title('Precision-Recall Curve')
-    plt.grid(True)
-    plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.1), ncol=2)  # Legends below the plot
-
-    # ROC Curve Subplot
-    plt.subplot(1, 2, 2)
-    for class_index, class_name in enumerate(class_names):
-        scores_list = data[class_name]
-        
-        # Calculate ROC values for each run
-        fprs = []
-        tprs = []
-        roc_aucs = []
-
-        for scores, gt in zip(scores_list, data_input['gt_labels']):
-            fpr, tpr, _ = roc_curve(gt, scores)
-            #plt.plot(fpr, tpr, color='gray', alpha=0.1)
-            
-            fprs.append(np.interp(np.linspace(0, 1, 1000), fpr, tpr))  # Interpolating to have the same fpr points
-            roc_aucs.append(auc(fpr, tpr))
-
-        fprs = np.array(fprs)
-
-        # Calculate max, min, and median tpr at each fpr point
-        tpr_max = np.max(fprs, axis=0)
-        tpr_min = np.min(fprs, axis=0)
-        tpr_median = np.median(fprs, axis=0)
-        fpr_points = np.linspace(0, 1, 1000)
-        
-        roc_auc = np.mean(roc_aucs)
-        plt.fill_between(fpr_points, tpr_min, tpr_max, alpha=0.1, color=colors[class_index])
-        plt.plot(fpr_points, tpr_median, label=f'{class_name} AUC: {roc_auc:.3f}', color=colors[class_index])
-
-    plt.xlabel('False Positive Rate')
-    plt.ylabel('True Positive Rate')
-    plt.title('ROC Curve')
-    plt.grid(True)
-    plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.1), ncol=2)  # Legends below the plot
-
-    # Adjust layout to add space between subplots
-    plt.subplots_adjust(wspace=0.3, hspace=0.5)  # Adjust the space between subplots
-
-    plt.show()
-    
-#original
-
-import numpy as np
-import matplotlib.pyplot as plt
-from sklearn.preprocessing import MinMaxScaler
-from sklearn.metrics import precision_recall_curve, average_precision_score, roc_curve, auc
-from sklearn.metrics import confusion_matrix
-
-def metrics_and_plots(labels, scores1, scores2, scores3, category):
-    scores_list = [scores1, scores2, scores3]
-    colors = ['blue', 'green', 'red']
-    labels_scores = ['Iso-Forest', 'LOF', 'Ensemble']
-
-    plt.figure(figsize=(24, 6))
-    plt.suptitle(f'{category}', y=1.02, fontsize=16) 
-
-    # Plot Precision-Recall curves
-    plt.subplot(1, 3, 1)
-    for scores, color, label in zip(scores_list, colors, labels_scores):
-        scaler = MinMaxScaler()
-        scores_scaled = scaler.fit_transform(scores.reshape(-1, 1)).flatten()
-        precision, recall, _ = precision_recall_curve(labels, 1 - scores_scaled)
-        avg_precision = average_precision_score(labels, 1 - scores_scaled)
-        plt.plot(recall, precision, marker='.', color=color, label=f'{label} (AP = {avg_precision:.2f})')
-    
-    plt.xlabel('Recall')
-    plt.ylabel('Precision')
-    plt.title('Precision-Recall Curve')
-    plt.legend()
-    plt.grid(True)
-
-    # Plot ROC curves
-    plt.subplot(1, 3, 2)
-    for scores, color, label in zip(scores_list, colors, labels_scores):
-        scaler = MinMaxScaler()
-        scores_scaled = scaler.fit_transform(scores.reshape(-1, 1)).flatten()
-        fpr, tpr, _ = roc_curve(labels, 1 - scores_scaled)
-        roc_auc = auc(fpr, tpr)
-        plt.plot(fpr, tpr, marker='.', color=color, label=f'{label} (AUC = {roc_auc:.2f})')
-
-    plt.xlabel('False Positive Rate')
-    plt.ylabel('True Positive Rate')
-    plt.title('ROC Curve')
-    plt.legend()
-    plt.grid(True)
-
-    # Plot FNR vs Threshold
-    plt.subplot(1, 3, 3)
-    
-    for scores, color, label in zip(scores_list, colors, labels_scores):
-        scaler = MinMaxScaler()
-        scores_scaled = scaler.fit_transform(scores.reshape(-1, 1)).flatten()
-        
-        indsort=scores_scaled.argsort()
-        sorted=scores_scaled[indsort]
-        sorted_labs=np.array(labels)[indsort]
-
-        fnr_values = []
-        fpr_values = []
-
-        # Calculate FNR for each quantile from 1 to 100
-        for q in range(0, 102,2):
-            threshold = np.percentile(sorted, q)
-            predictions = (sorted <= threshold).astype(int)
-            tn, fp, fn, tp = confusion_matrix(1-sorted_labs, 1-predictions).ravel()
-            # Calculate FNR
-            fnr = fn / (tn+fn) if (tn+fn)> 0 else 0
-            fnr_values.append(fnr)
-            
-            fpr = fp / (tn+fp) if (tn+fp)> 0 else 0
-            fpr_values.append(fpr)
-
-        # plt.plot(range(0, 102,2), fnr_values, marker='o',color=color)
-        plt.plot(range(0, 102,2), fpr_values, marker='o',color=color)
-    plt.title('False Negative Ratio (FNR) by Percentile')
-    plt.xlabel('Percentile')
-    plt.ylabel('False Negative Ratio (FNR)')
-    plt.grid(True)
-    plt.show()
-        
-
-    # Plot histograms of scaled scores
-    plt.figure(figsize=(18, 6))
-    plt.suptitle(f'{category}', y=1.02, fontsize=16) 
-    for i, (scores, color, label) in enumerate(zip(scores_list, colors, labels_scores)):
-        plt.subplot(1, 3, i+1)
-        scaler = MinMaxScaler()
-        scores_scaled = scaler.fit_transform(scores.reshape(-1, 1)).flatten()
-        scores_scaled_0 = scores_scaled[labels == 0]
-        scores_scaled_1 = scores_scaled[labels == 1]
-        plt.hist(scores_scaled_0, bins=30, color='blue', edgecolor='black', alpha=0.7, label='Normals')
-        plt.hist(scores_scaled_1, bins=30, color='green', edgecolor='black', alpha=0.7, label='Anomalies')
-        plt.title(f'Distribution of {label}')
-        plt.xlabel('Score')
-        plt.ylabel('Frequency')
-        plt.legend()
-        plt.grid(True)
-
-    plt.tight_layout()
-    plt.show()
-    
-    # Creating a bar plot for Scores 1, Scores 2, and Scores 3
-    plt.figure(figsize=(30, 6))
-    x = np.arange(len(scores1))
-    width = 0.2
-
-    plt.bar(x - width, scores1, width, label='Iso-Forest', color='blue')
-    plt.bar(x, scores2, width, label='LOF', color='green')
-    # plt.bar(x + width, scores3, width, label='Ensemble', color='red')
-
-    plt.xlabel('Index')
-    plt.ylabel('Value')
-    plt.title('Bar Plot of Scores')
-    plt.legend()
-    plt.show()
     
 def load_image(filename, crop_size=256, aligned=True, img_size=280):
     img = Image.open(filename)
@@ -565,7 +275,7 @@ def main():
                 self.num_row = 4
                 self.activation = 'gelu'
                 self.unalign_test = False
-                self.data_root = '/home/bule/projects/datasets/mvtec_anomaly_detection/'
+                self.data_root = '/home/bule/projects/datasets/mvtec_loco/'
                 self.dataset_name = category
                 self.batch_size = 2
                 self.lr = 1e-4
@@ -582,7 +292,7 @@ def main():
         args = TrainOptions(category)
 
         data = {'paths':[],'gt_labels':[],'own; ISO':[],'own; LOF':[],'TSNE; ISO':[],'TSNE; LOF':[],'PCA; ISO':[],'PCA; LOF':[],'Original; ISO':[],'Original; LOF':[],'FMAPS; ISO':[],"Vit_beans; LOF":[],"Vit_beans; Cosine":[]}
-        paths=[f'/home/bule/projects/UTRAD/results/mvtec/contamination_10/Exp_07_06_run_{i}-{category}/experiment_paths.json' for i in range(1,6)]
+        paths=[f'/home/bule/projects/UTRAD/results/mvtec_loco/contamination_10/Exp_20_06_24_run_{i}-{category}/experiment_paths.json' for i in range(1,6)]
 
         for path in paths:
             with open(path, 'r') as file:
@@ -686,7 +396,7 @@ def main():
             # data["Vit_beans; LOF"].append(scaler.fit_transform(np.array(anomaly_scores).reshape(-1, 1)).flatten())
             print("run completed")
             
-        filename = f'/home/bule/projects/UTRAD/Refinement_Comparison_{category}.pkl'
+        filename = f'/home/bule/projects/UTRAD/results/mvtec_loco/refinement/Refinement_Comparison_{category}.pkl'
 
 
         # Dump the dictionary to a pickle file
@@ -708,7 +418,7 @@ def main():
                 self.num_row = 4
                 self.activation = 'gelu'
                 self.unalign_test = False
-                self.data_root = '/home/bule/projects/datasets/mvtec_anomaly_detection/'
+                self.data_root = '/home/bule/projects/datasets/mvtec_loco/'
                 self.dataset_name = category
                 self.batch_size = 2
                 self.lr = 1e-4
@@ -745,7 +455,7 @@ def main():
 
         args = TrainOptions(category)
         data = {'paths':[],'gt_labels':[],"Vit_beans; LOF":[],"Vit_beans; Cosine":[]}
-        path=f'/home/bule/projects/UTRAD/results/mvtec/contamination_10/Exp_07_06_run_{argu.run}-{category}/experiment_paths.json' 
+        path=f'/home/bule/projects/UTRAD/results/mvtec_loco/contamination_10/Exp_20_06_24_run_{argu.run}-{category}/experiment_paths.json' 
 
         with open(path, 'r') as file:
             experiment = json.load(file)
@@ -783,7 +493,7 @@ def main():
     
     
     
-        filename = f'/home/bule/projects/UTRAD/results/refinement/Refinement_Comparison_SOTA_{category}.pkl'
+        filename = f'/home/bule/projects/UTRAD/results/mvtec_loco/refinement/Refinement_Comparison_SOTA_{category}.pkl'
 
         if os.path.exists(filename):
             
@@ -819,7 +529,7 @@ def main():
                 self.num_row = 4
                 self.activation = 'gelu'
                 self.unalign_test = False
-                self.data_root = '/home/bule/projects/datasets/mvtec_anomaly_detection/'
+                self.data_root = '/home/bule/projects/datasets/mvtec_loco/'
                 self.dataset_name = category
                 self.batch_size = 2
                 self.lr = 1e-4
@@ -858,7 +568,7 @@ def main():
         
         args = TrainOptions(category)
         data = {'paths':[],'gt_labels':[],"Vit_imagenet; LOF":[],"Vit_imagenet; Cosine":[]}
-        path=f'/home/bule/projects/UTRAD/results/mvtec/contamination_10/Exp_07_06_run_{argu.run}-{category}/experiment_paths.json' 
+        path=f'/home/bule/projects/UTRAD/results/mvtec_loco/contamination_10/Exp_20_06_24_run_{argu.run}-{category}/experiment_paths.json' 
 
         with open(path, 'r') as file:
             experiment = json.load(file)
@@ -903,7 +613,7 @@ def main():
     
     
     
-        filename = f'/home/bule/projects/UTRAD/results/refinement/Refinement_Comparison_SOTA_imagenet_{category}.pkl'
+        filename = f'/home/bule/projects/UTRAD/results/mvtec_loco/refinement/Refinement_Comparison_SOTA_imagenet_{category}.pkl'
 
         if os.path.exists(filename):
             
