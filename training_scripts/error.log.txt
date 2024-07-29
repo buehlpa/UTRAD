@@ -1,0 +1,30 @@
+/home/bule/anaconda3/envs/ultrad/lib/python3.9/site-packages/torchvision/models/_utils.py:208: UserWarning: The parameter 'pretrained' is deprecated since 0.13 and may be removed in the future, please use 'weights' instead.
+  warnings.warn(
+/home/bule/anaconda3/envs/ultrad/lib/python3.9/site-packages/torchvision/models/_utils.py:223: UserWarning: Arguments other than a weight enum or `None` for 'weights' are deprecated since 0.13 and may be removed in the future. The current behavior is equivalent to passing `weights=ResNet18_Weights.IMAGENET1K_V1`. You can also use `weights=ResNet18_Weights.DEFAULT` to get the most up-to-date weights.
+  warnings.warn(msg)
+Traceback (most recent call last):
+  File "/home/bule/projects/UTRAD/refinement_featurewise_visa.py", line 638, in <module>
+    main()
+  File "/home/bule/projects/UTRAD/refinement_featurewise_visa.py", line 299, in main
+    experiment_refined=refine_paths(experiment,args)
+  File "/home/bule/projects/UTRAD/refinement_featurewise_visa.py", line 89, in refine_paths
+    outputs = embedding_concat(embedding_concat(outputs[0], outputs[1]), outputs[2])
+  File "/home/bule/projects/UTRAD/refinement_featurewise_visa.py", line 61, in embedding_concat
+    x = x.view(B, C1, -1, H2, W2)
+
+candle :
+
+RuntimeError: shape '[1, 64, -1, 32, 36]' is invalid for input of size 286720
+
+cashew:
+
+RuntimeError: shape '[1, 192, -1, 16, 18]' is invalid for input of size 835584
+
+
+chewinggum
+
+RuntimeError: shape '[1, 64, -1, 32, 39]' is invalid for input of size 311296
+
+pcb4
+
+RuntimeError: shape '[1, 64, -1, 32, 40]' is invalid for input of size 319488

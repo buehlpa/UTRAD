@@ -32,6 +32,8 @@ def refine_paths(experiment,args):
     def load_image(filename, crop_size=256, aligned=True, img_size=280):
         img = Image.open(filename)
         img = img.convert('RGB')
+        resize_=transforms.Resize((crop_size, crop_size), Image.BICUBIC)
+        img=resize_(img)
         
         if aligned:
             img = TF.resize(img, crop_size, Image.BICUBIC)
@@ -128,12 +130,14 @@ def refine_paths(experiment,args):
     # with open(experiment_path, 'w') as file:
     #     json.dump(experiment, file)
         
-
+import torchvision.transforms as transforms
     
 def load_image(filename, crop_size=256, aligned=True, img_size=280):
     img = Image.open(filename)
     img = img.convert('RGB')
-    
+    resize_=transforms.Resize((crop_size, crop_size), Image.BICUBIC)
+    img=resize_(img)
+
     if aligned:
         img = TF.resize(img, crop_size, Image.BICUBIC)
         img = TF.to_tensor(img)

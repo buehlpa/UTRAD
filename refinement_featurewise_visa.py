@@ -20,7 +20,7 @@ import torch.nn.functional as F
 import torchvision.transforms as T
 
 import os
-os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
+# os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
 
 
 
@@ -37,6 +37,8 @@ def refine_paths(experiment,args):
     def load_image(filename, crop_size=256, aligned=True, img_size=280):
         img = Image.open(filename)
         img = img.convert('RGB')
+        resize_=transforms.Resize((crop_size, crop_size), Image.BICUBIC)
+        img=resize_(img)
         
         if aligned:
             img = TF.resize(img, crop_size, Image.BICUBIC)
@@ -80,6 +82,15 @@ def refine_paths(experiment,args):
     backbone.layer3[-1].register_forward_hook(hook)
 
     img_list = [load_image(path, aligned=True) for path in path_list]
+    
+    for img in img_list:
+        print(img.shape)
+
+
+
+
+
+
 
     with torch.no_grad():
         for img in img_list:
@@ -130,14 +141,18 @@ def refine_paths(experiment,args):
     # with open(experiment_path, 'w') as file:
     #     json.dump(experiment, file)
         
-
+import torchvision.transforms as transforms
 
     
 def load_image(filename, crop_size=256, aligned=True, img_size=280):
     img = Image.open(filename)
     img = img.convert('RGB')
+    resize_=transforms.Resize((crop_size, crop_size), Image.BICUBIC)
+    img=resize_(img)
+    
     
     if aligned:
+        
         img = TF.resize(img, crop_size, Image.BICUBIC)
         img = TF.to_tensor(img)
         img = TF.normalize(img, mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
