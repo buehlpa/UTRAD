@@ -441,3 +441,55 @@ anomaly_categories = {
     "wood": ["color", "combined", "hole", "liquid", "scratch"],
     "zipper": ["broken_teeth", "combined","fabric_border", "fabric_interior","split_teeth","rough", "squeezed_teeth"]
 }
+
+from scipy.stats import ttest_rel ,ttest_ind
+def paired_t_test_per_category(df, category_column):
+    categories = df[category_column].unique()
+    t_test_results = []
+
+    for category in categories:
+        print(category)
+        #image
+        category_data = df[df[category_column] == category]
+
+        t_stat, p_value = ttest_rel(category_data['image_AUC_contaminated'],category_data['image_AUC_clean'],alternative='less')
+        t_stat_image_median, p_value_image_median = ttest_ind(category_data['median_image_AUC_contaminated'], category_data['median_image_AUC_clean'], alternative='less')
+        t_stat_pixel, p_value_pixel = ttest_ind(category_data['pixel_AUC_contaminated'], category_data['pixel_AUC_clean'], alternative='less')
+        t_stat_pixel_median, p_value_pixel_median = ttest_ind(category_data['median_pixel_AUC_contaminated'], category_data['median_pixel_AUC_clean'], alternative='less')
+        
+        t_test_results.append({
+                               
+                               'category': category,
+
+                               'image_median_clean':np.median(category_data['image_AUC_clean']),
+                               'image_median_contaminated':np.median(category_data['image_AUC_contaminated']),
+                               'pixel_median_clean':np.median(category_data['pixel_AUC_clean']),
+                               'pixel_median_contaminated':np.median(category_data['pixel_AUC_contaminated']),
+                               
+                               'image_difference':np.mean(category_data['image_AUC_clean']-category_data['image_AUC_contaminated']),
+                               'pixel_difference':np.mean(category_data['pixel_AUC_clean']-category_data['pixel_AUC_contaminated']),
+                               
+                               't_stat_image': t_stat,
+                               'p_value_image': p_value,                            
+                               't_stat_pixel': t_stat_pixel,
+                               'p_value_pixel': p_value_pixel,
+                               
+                               'image_median_clean_robust':np.median(category_data['median_image_AUC_clean']),
+                               'image_median_contaminated_robust':np.median(category_data['median_image_AUC_contaminated']),
+                               'pixel_median_clean_robust':np.median(category_data['median_pixel_AUC_clean']),
+                               'pixel_median_contaminated_robust':np.median(category_data['median_pixel_AUC_contaminated']),
+                               
+                               'image_difference_robust':np.mean(category_data['median_image_AUC_clean']-category_data['median_image_AUC_contaminated']),
+                               'pixel_difference_robust':np.mean(category_data['median_pixel_AUC_clean']-category_data['median_pixel_AUC_contaminated']),
+                               
+                               't_stat_image_robust': t_stat_image_median,
+                               'p_value_image_robust': p_value_image_median,                            
+                               't_stat_pixel_robust': t_stat_pixel_median,
+                               'p_value_pixel_robust': p_value_pixel_median,
+                               
+                               'var_image_AUC_contaminated':np.median(category_data['var_image_AUC_contaminated']),
+                               'var_image_AUC_clean':np.median(category_data['var_image_AUC_clean']),
+                               'var_pixel_AUC_contaminated':np.median(category_data['var_pixel_AUC_contaminated']),
+                               'var_pixel_AUC_clean':np.median(category_data['var_pixel_AUC_clean'])})
+        
+    return pd.DataFrame(t_test_results)
