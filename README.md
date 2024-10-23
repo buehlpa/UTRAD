@@ -1,5 +1,10 @@
 # UTRAD
 UTRAD for nueral networks
+
+Code for the results of UTRAD model, and refinement for the work Unsupervised Anomaly Detection with Transformers Challenges of COntaminated Datasets.
+
+NEEDS Cleanup
+
 ## Installation
 This repo was tested with Ubuntu 16.04/18.04, Pytorch 1.5.0
 ## Running 
